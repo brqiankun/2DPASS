@@ -9,7 +9,10 @@ from PIL import Image
 from torch.utils import data
 from torchvision import transforms as T
 from pyquaternion import Quaternion
-from nuscenes.utils.geometry_utils import view_points
+try:
+    from nuscenes.utils.geometry_utils import view_points
+except:
+    print("please install nuscenes devkit if you want to use nuscences")
 
 REGISTERED_DATASET_CLASSES = {}
 REGISTERED_COLATE_CLASSES = {}

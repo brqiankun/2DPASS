@@ -68,13 +68,15 @@ If you find our work useful in your research, please consider citing:
 ### Requirements
 - pytorch >= 1.8 
 - yaml
-- easydict
-- pyquaternion
-- [lightning](https://github.com/Lightning-AI/lightning) (tested with pytorch_lightning==1.3.8 and torchmetrics==0.5)
-- [torch-scatter](https://github.com/rusty1s/pytorch_scatter) (pip install torch-scatter -f https://data.pyg.org/whl/torch-1.9.0+${CUDA}.html)
-- [nuScenes-devkit](https://github.com/nutonomy/nuscenes-devkit) (optional for nuScenes)
-- [spconv](https://github.com/traveller59/spconv) (tested with spconv==2.1.16 and cuda==11.1, pip install spconv-cu111==2.1.16)
+- easydict  `conda install -c conda-forge easydict` done
+- pyquaternion   四元数库 `conda install -c conda-forge quaternion`  this `pip install pyquaternion` (http://kieranwynn.github.io/pyquaternion/)  done
+- [lightning](https://github.com/Lightning-AI/lightning) (https://lightning.ai/docs/pytorch/latest/)  (tested with pytorch_lightning==1.3.8 and torchmetrics==0.5)  `conda install lightning -c conda-forge` done
+- [torch-scatter](https://github.com/rusty1s/pytorch_scatter) (pip install torch-scatter -f https://data.pyg.org/whl/torch-1.9.0+${CUDA}.html) done
+- [nuScenes-devkit](https://github.com/nutonomy/nuscenes-devkit) `pip install nuscenes-devkit` done (optional for nuScenes)
+- [spconv](https://github.com/traveller59/spconv) (tested with spconv==2.1.16 and cuda==11.1, pip install spconv-cu111==2.1.16) done 
 - [torchsparse](https://github.com/mit-han-lab/torchsparse) (optional for MinkowskiNet and SPVCNN. sudo apt-get install libsparsehash-dev, pip install --upgrade git+https://github.com/mit-han-lab/torchsparse.git@v1.4.0)
+- pip install -U tensorboard
+- pip install -U tensorboardX
 
 ## Data Preparation
 
@@ -124,6 +126,7 @@ Please download the Full dataset (v1.0) from the [NuScenes website](https://www.
 ## Training
 ### SemanticKITTI
 You can run the training with
+batch_size 设置为2可以训练， 1个epoch 2:40:00  
 ```shell script
 cd <root dir of this repo>
 python main.py --log_dir 2DPASS_semkitti --config config/2DPASS-semantickitti.yaml --gpu 0
@@ -147,6 +150,8 @@ You can run the testing with
 ```shell script
 cd <root dir of this repo>
 python main.py --config config/2DPASS-semantickitti.yaml --gpu 0 --test --num_vote 12 --checkpoint <dir for the pytorch checkpoint>
+
+python main.py --config checkpoint/2DPASS-semantickitti.yaml --gpu 0 --test --num_vote 1 --checkpoint checkpoint/best_model.ckpt
 ```
 Here, `num_vote` is the number of views for the test-time-augmentation (TTA). We set this value to 12 as default (on a Tesla-V100 GPU), and if you use other GPUs with smaller memory, you can choose a smaller value. `num_vote=1` denotes there is no TTA used, and will cause about ~2\% performance drop.
 
@@ -206,4 +211,51 @@ Code is built based on [SPVNAS](https://github.com/mit-han-lab/spvnas), [Cylinde
 This repository is released under MIT License (see LICENSE file for details).
 
 
+因此，在这项工作中，我们提出了 2D 先验辅助语义分割（2DPASS）方法，一种通用训练方案，用于促进点云上的表示学习。所提出的2DPAS方法充分利用了训练过程中丰富的2D图像，然后在没有严格配对数据约束的情况下进行语义分割。
+在实践中，通过利用辅助模态融合和多尺度融合到单一知识蒸馏 （MSFSKD），2DPASS 从多模态数据中获取更丰富的语义和结构信息，然后将其提炼到纯 3D 网络中。因此，我们的基线模型在配备 2DPASS 后仅使用点云输入即可获得显着改进。
 
+```
+please install torchsparse if you want to run spvcnn/minkowskinet!
+{'format_version': 1, 'model_params': {'model_architecture': 'arch_2dpass', 'input_dims': 4, 'spatial_shape': [1000, 1000, 60], 'scale_list': [2, 4, 8, 16], 'hiden_size': 64, 'num_classes': 20, 'backbone_2d': 'resnet34', 'pretrained2d': False}, 'dataset_params': {'training_size': 19132, 'dataset_type': 'point_image_dataset_semkitti', 'pc_dataset_type': 'SemanticKITTI', 'collate_type': 'collate_fn_default', 'ignore_label': 0, 'label_mapping': './config/label_mapping/semantic-kitti.yaml', 'bottom_crop': [480, 320], 'color_jitter': [0.4, 0.4, 0.4], 'flip2d': 0.5, 'image_normalizer': [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]], 'max_volume_space': [50, 50, 2], 'min_volume_space': [-50, -50, -4], 'seg_labelweights': [0, 55437630, 320797, 541736, 2578735, 3274484, 552662, 184064, 78858, 240942562, 17294618, 170599734, 6369672, 230413074, 101130274, 476491114, 9833174, 129609852, 4506626, 1168181], 'train_data_loader': {'data_path': './dataset/SemanticKitti/dataset/sequences/', 'batch_size': 8, 'shuffle': True, 'num_workers': 8, 'rotate_aug': True, 'flip_aug': True, 'scale_aug': True, 'transform_aug': True, 'dropout_aug': True}, 'val_data_loader': {'data_path': './dataset/SemanticKitti/dataset/sequences/', 'shuffle': False, 'num_workers': 8, 'batch_size': 1, 'rotate_aug': False, 'flip_aug': False, 'scale_aug': False, 'transform_aug': False, 'dropout_aug': False}}, 'train_params': {'max_num_epochs': 64, 'learning_rate': 0.24, 'optimizer': 'SGD', 'lr_scheduler': 'CosineAnnealingWarmRestarts', 'momentum': 0.9, 'nesterov': True, 'weight_decay': 0.0001, 'lambda_seg2d': 1, 'lambda_xm': 0.05}, 'gpu': [0], 'seed': 0, 'config_path': 'checkpoint/2DPASS-semantickitti.yaml', 'log_dir': 'default', 'monitor': 'val/mIoU', 'stop_patience': 50, 'save_top_k': 1, 'check_val_every_n_epoch': 1, 'SWA': False, 'baseline_only': False, 'test': True, 'fine_tune': False, 'pretrain2d': False, 'num_vote': 1, 'submit_to_server': False, 'checkpoint': 'checkpoint/best_model.ckpt', 'debug': False}
+Global seed set to 0
+load pre-trained model...
+Start testing...
+GPU available: True, used: True
+TPU available: False, using: 0 TPU cores
+Global seed set to 0
+initializing ddp: GLOBAL_RANK: 0, MEMBER: 1/1
+----------------------------------------------------------------------------------------------------
+distributed_backend=nccl
+All DDP processes registered. Starting ddp with 1 processes
+----------------------------------------------------------------------------------------------------
+
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+Validation per class iou:                                                                                                                                                                                                             
+car : 96.83%
+bicycle : 52.55%
+motorcycle : 76.33%
+truck : 90.74%
+bus : 71.38%
+person : 78.36%
+bicyclist : 92.35%
+motorcyclist : 0.06%
+road : 93.24%
+parking : 50.75%
+sidewalk : 80.08%
+other-ground : 8.44%
+building : 92.21%
+fence : 68.27%
+vegetation : 88.37%
+trunk : 71.19%
+terrain : 74.63%
+pole : 63.92%
+traffic-sign : 53.46%
+Current val miou is 68.587 while the best val miou is 68.587
+Testing: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4071/4071 [06:19<00:00, 10.72it/s]
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{'val/acc': 0.8935943841934204,
+ 'val/best_miou': 0.6858724848558865,
+ 'val/mIoU': 0.6858724848558865}
+--------------------------------------------------------------------------------
+```

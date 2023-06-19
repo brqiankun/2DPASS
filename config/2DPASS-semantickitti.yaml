@@ -76,9 +76,9 @@ dataset_params:
 
   train_data_loader:
     data_path: "./dataset/SemanticKitti/dataset/sequences/"
-    batch_size: 8
+    batch_size: 2
     shuffle: True
-    num_workers: 8
+    num_workers: 2
     rotate_aug: True
     flip_aug: True
     scale_aug: True
@@ -88,10 +88,10 @@ dataset_params:
   val_data_loader:
     data_path: "./dataset/SemanticKitti/dataset/sequences/"
     shuffle: False
-    num_workers: 8
+    num_workers: 2
 
     # normal test
-    batch_size: 8
+    batch_size: 2
     rotate_aug: False
     flip_aug: False
     scale_aug: False
