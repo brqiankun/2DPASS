@@ -27,6 +27,10 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 import warnings
 warnings.filterwarnings("ignore")
 
+import logging
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
+def stop_here():
+    raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
 
 def load_yaml(file_name):
     with open(file_name, 'r') as f:
@@ -167,6 +171,9 @@ if __name__ == '__main__':
     train_dataset_loader, val_dataset_loader, test_dataset_loader = build_loader(configs)
     model_file = importlib.import_module('network.' + configs['model_params']['model_architecture'])
     my_model = model_file.get_model(configs)
+    logging.info(my_model)
+    logging.info(type(my_model))
+    # stop_here()
 
     pl.seed_everything(configs.seed)
     checkpoint_callback = ModelCheckpoint(

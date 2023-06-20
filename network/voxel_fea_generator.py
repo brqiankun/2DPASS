@@ -12,11 +12,17 @@ import numpy as np
 import spconv.pytorch as spconv
 
 
+import logging
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
+def stop_here():
+    raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
+
+
 class voxelization(nn.Module):
     def __init__(self, coors_range_xyz, spatial_shape, scale_list):
         super(voxelization, self).__init__()
         self.spatial_shape = spatial_shape
-        self.scale_list = scale_list + [1]
+        self.scale_list = scale_list + [1]   # add scale 1
         self.coors_range_xyz = coors_range_xyz
 
     @staticmethod
@@ -26,7 +32,13 @@ class voxelization(nn.Module):
 
     def forward(self, data_dict):
         pc = data_dict['points'][:, :3]
+        logging.info("🚀 pc.shape: {}".format(pc.shape))
+        logging.info("🚀 data_dict['points'].shape: {}".format(data_dict['points'].shape))
+        logging.info("self.scale_list: {}".format(self.scale_list))
+        logging.info("self.coors_range_xyz: {}".format(self.coors_range_xyz))
+        logging.info("self.spatial_shape: {}".format(self.spatial_shape))
 
+        # 得到每个点云在体素中的坐标
         for idx, scale in enumerate(self.scale_list):
             xidx = self.sparse_quantize(pc[:, 0], self.coors_range_xyz[0], np.ceil(self.spatial_shape[0] / scale))
             yidx = self.sparse_quantize(pc[:, 1], self.coors_range_xyz[1], np.ceil(self.spatial_shape[1] / scale))

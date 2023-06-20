@@ -70,7 +70,8 @@ If you find our work useful in your research, please consider citing:
 - yaml
 - easydict  `conda install -c conda-forge easydict` done
 - pyquaternion   四元数库 `conda install -c conda-forge quaternion`  this `pip install pyquaternion` (http://kieranwynn.github.io/pyquaternion/)  done
-- [lightning](https://github.com/Lightning-AI/lightning) (https://lightning.ai/docs/pytorch/latest/)  (tested with pytorch_lightning==1.3.8 and torchmetrics==0.5)  `conda install lightning -c conda-forge` done
+- [lightning](https://github.com/Lightning-AI/lightning) (https://lightning.ai/docs/pytorch/latest/)  (tested with pytorch_lightning==1.3.8 and torchmetrics==0.5)  `pip install pytorch_lightning==1.3.8 pip install torchmetrics==0.5`
+`conda install lightning -c conda-forge` done
 - [torch-scatter](https://github.com/rusty1s/pytorch_scatter) (pip install torch-scatter -f https://data.pyg.org/whl/torch-1.9.0+${CUDA}.html) done
 - [nuScenes-devkit](https://github.com/nutonomy/nuscenes-devkit) `pip install nuscenes-devkit` done (optional for nuScenes)
 - [spconv](https://github.com/traveller59/spconv) (tested with spconv==2.1.16 and cuda==11.1, pip install spconv-cu111==2.1.16) done 
@@ -259,3 +260,157 @@ DATALOADER:0 TEST RESULTS
  'val/mIoU': 0.6858724848558865}
 --------------------------------------------------------------------------------
 ```
+
+2dpass 模型结构
+model_3d 是 SPVCNN
+model_2d 是 ResNetFCN
+fusion 是 xModalKD
+
+data_dict -> model_3d -> model_2d -> fusion -> data_dict  ??
+
+### data_dict
+/home/bairui/program/2dpass/network/arch_2dpass.py->171: points
+/home/bairui/program/2dpass/network/arch_2dpass.py->171: ref_xyz
+/home/bairui/program/2dpass/network/arch_2dpass.py->171: batch_idx
+/home/bairui/program/2dpass/network/arch_2dpass.py->171: batch_size
+/home/bairui/program/2dpass/network/arch_2dpass.py->171: labels
+/home/bairui/program/2dpass/network/arch_2dpass.py->171: raw_labels
+/home/bairui/program/2dpass/network/arch_2dpass.py->171: origin_len
+/home/bairui/program/2dpass/network/arch_2dpass.py->171: indices
+/home/bairui/program/2dpass/network/arch_2dpass.py->171: point2img_index
+/home/bairui/program/2dpass/network/arch_2dpass.py->171: img
+/home/bairui/program/2dpass/network/arch_2dpass.py->171: img_indices
+/home/bairui/program/2dpass/network/arch_2dpass.py->171: img_label
+/home/bairui/program/2dpass/network/arch_2dpass.py->171: path
+
+data_dict['points'].shape: torch.Size([119549, 4])
+pc.shape: torch.Size([119549, 3])
+self.scale_list: [2, 4, 8, 16, 1]
+
+### data_dict -> model_3d.voxelizer -> data_dict
+
+/home/bairui/program/2dpass/network/baseline.py->174: points
+/home/bairui/program/2dpass/network/baseline.py->174: ref_xyz
+/home/bairui/program/2dpass/network/baseline.py->174: batch_idx
+/home/bairui/program/2dpass/network/baseline.py->174: batch_size
+/home/bairui/program/2dpass/network/baseline.py->174: labels
+/home/bairui/program/2dpass/network/baseline.py->174: raw_labels
+/home/bairui/program/2dpass/network/baseline.py->174: origin_len
+/home/bairui/program/2dpass/network/baseline.py->174: indices
+/home/bairui/program/2dpass/network/baseline.py->174: point2img_index
+/home/bairui/program/2dpass/network/baseline.py->174: img
+/home/bairui/program/2dpass/network/baseline.py->174: img_indices
+/home/bairui/program/2dpass/network/baseline.py->174: img_label
+/home/bairui/program/2dpass/network/baseline.py->174: path
+/home/bairui/program/2dpass/network/baseline.py->174: scale_2
+/home/bairui/program/2dpass/network/baseline.py->174: scale_4
+/home/bairui/program/2dpass/network/baseline.py->174: scale_8
+/home/bairui/program/2dpass/network/baseline.py->174: scale_16
+/home/bairui/program/2dpass/network/baseline.py->174: scale_1
+
+### data_dict -> model_3d -> data_dict
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: points
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: ref_xyz
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: batch_idx
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: batch_size
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: labels
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: raw_labels
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: origin_len
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: indices
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: point2img_index
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: img
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: img_indices
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: img_label
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: path
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: scale_2
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: scale_4
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: scale_8
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: scale_16
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: scale_1
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: sparse_tensor
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: coors
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: coors_inv
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: full_coors
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: layer_0
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: layer_1
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: layer_2
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: layer_3
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: logits
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: loss
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: loss_main_ce
+/home/bairui/program/2dpass/network/arch_2dpass.py->172: loss_main_lovasz
+
+### data_dict -> model_2d -> data_dict
+
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: points
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: ref_xyz
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: batch_idx
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: batch_size
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: labels
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: raw_labels
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: origin_len
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: indices
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: point2img_index
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: img
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: img_indices
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: img_label
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: path
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: scale_2
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: scale_4
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: scale_8
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: scale_16
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: scale_1
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: sparse_tensor
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: coors
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: coors_inv
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: full_coors
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: layer_0
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: layer_1
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: layer_2
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: layer_3
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: logits
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: loss
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: loss_main_ce
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: loss_main_lovasz
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: img_scale2
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: img_scale4
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: img_scale8
+/home/bairui/program/2dpass/network/arch_2dpass.py->179: img_scale16
+
+
+### data_dict -> fusion -> data_dict
+
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: points
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: ref_xyz
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: batch_idx
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: batch_size
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: labels
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: raw_labels
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: origin_len
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: indices
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: point2img_index
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: img
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: img_indices
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: img_label
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: path
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: scale_2
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: scale_4
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: scale_8
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: scale_16
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: scale_1
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: sparse_tensor
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: coors
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: coors_inv
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: full_coors
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: layer_0
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: layer_1
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: layer_2
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: layer_3
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: logits
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: loss
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: loss_main_ce
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: loss_main_lovasz
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: img_scale2
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: img_scale4
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: img_scale8
+/home/bairui/program/2dpass/network/arch_2dpass.py->183: img_scale16

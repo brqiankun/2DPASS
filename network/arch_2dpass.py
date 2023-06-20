@@ -9,6 +9,11 @@ from network.baseline import get_model as SPVCNN
 from network.base_model import LightningBaseModel
 from network.basic_block import ResNetFCN
 
+import logging
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
+def stop_here():
+    raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
+
 class xModalKD(nn.Module):
     def __init__(self,config):
         super(xModalKD, self).__init__()
@@ -162,11 +167,23 @@ class get_model(LightningBaseModel):
 
     def forward(self, data_dict):
         # 3D network
+        # for k in data_dict.keys():
+        #     logging.info(k)
+        # stop_here()
         data_dict = self.model_3d(data_dict)
+        # for k in data_dict.keys():
+        #     logging.info(k)
+        # stop_here()
 
         # training with 2D network
-        if self.training and not self.baseline_only:
+        if True or self.training and not self.baseline_only:
             data_dict = self.model_2d(data_dict)
+            # for k in data_dict.keys():
+            #     logging.info(k)
+            # stop_here()
             data_dict = self.fusion(data_dict)
+            # for k in data_dict.keys():
+            #     logging.info(k)
+            # stop_here()
 
         return data_dict

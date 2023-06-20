@@ -17,6 +17,11 @@ from network.base_model import LightningBaseModel
 from network.basic_block import SparseBasicBlock
 from network.voxel_fea_generator import voxel_3d_generator, voxelization
 
+import logging
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
+def stop_here():
+    raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
+
 
 class point_encoder(nn.Module):
     def __init__(self, in_channels, out_channels, scale):
@@ -164,7 +169,13 @@ class get_model(LightningBaseModel):
 
     def forward(self, data_dict):
         with torch.no_grad():
+            # for k in data_dict.keys():
+            #     logging.info(k)
+            # stop_here()
             data_dict = self.voxelizer(data_dict)
+            for k in data_dict.keys():
+                logging.info(k)
+            stop_here()
 
         data_dict = self.voxel_3d_generator(data_dict)
 
