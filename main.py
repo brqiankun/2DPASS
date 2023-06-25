@@ -88,6 +88,9 @@ def build_loader(config):
     train_config = config['dataset_params']['train_data_loader']
     val_config = config['dataset_params']['val_data_loader']
     train_dataset_loader, val_dataset_loader, test_dataset_loader = None, None, None
+    logging.info(pc_dataset)
+    logging.info(dataset_type)
+    # stop_here()
 
     if not config['test']:
         train_pt_dataset = pc_dataset(config, data_path=train_config['data_path'], imageset='train')
@@ -171,8 +174,9 @@ if __name__ == '__main__':
     train_dataset_loader, val_dataset_loader, test_dataset_loader = build_loader(configs)
     model_file = importlib.import_module('network.' + configs['model_params']['model_architecture'])
     my_model = model_file.get_model(configs)
-    logging.info(my_model)
-    logging.info(type(my_model))
+    # logging.info(my_model)
+    # logging.info(type(my_model))
+    # logging.info("{}\n{}\n{}".format(train_dataset_loader, val_dataset_loader, test_dataset_loader))
     # stop_here()
 
     pl.seed_everything(configs.seed)

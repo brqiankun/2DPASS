@@ -25,6 +25,11 @@ except:
     print('please install torchsparse if you want to run spvcnn/minkowskinet!')
 
 
+import logging
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
+def stop_here():
+    raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
+
 def register_dataset(cls, name=None):
     global REGISTERED_DATASET_CLASSES
     if name is None:
@@ -112,6 +117,8 @@ class point_image_dataset_semkitti(data.Dataset):
         data, root = self.point_cloud_dataset[index]
 
         xyz = data['xyz']
+        # logging.info("xyz.shape: {}".format(xyz.shape))
+        # stop_here()
         labels = data['labels']
         instance_label = data['instance_label'].reshape(-1)
         sig = data['signal']
@@ -121,6 +128,7 @@ class point_image_dataset_semkitti(data.Dataset):
         ref_labels = labels.copy()
         ref_index = np.arange(len(ref_pc))
 
+        # 筛选掉空间范围外的点
         mask_x = np.logical_and(xyz[:, 0] > self.min_volume_space[0], xyz[:, 0] < self.max_volume_space[0])
         mask_y = np.logical_and(xyz[:, 1] > self.min_volume_space[1], xyz[:, 1] < self.max_volume_space[1])
         mask_z = np.logical_and(xyz[:, 2] > self.min_volume_space[2], xyz[:, 2] < self.max_volume_space[2])
@@ -147,19 +155,34 @@ class point_image_dataset_semkitti(data.Dataset):
 
         # load 2D data
         image = data['img']
+        # proj_matrix.shape: (3, 4) 
         proj_matrix = data['proj_matrix']
+        # logging.info(proj_matrix.shape)
 
         # project points into image
         keep_idx = xyz[:, 0] > 0  # only keep point in front of the vehicle
+        # logging.info(keep_idx)
+        # stop_here()
+        # 齐次坐标points_hcoords.shape: [n, 4]
         points_hcoords = np.concatenate([xyz[keep_idx], np.ones([keep_idx.sum(), 1], dtype=np.float32)], axis=1)
+        # logging.info(points_hcoords.shape)
+        # stop_here()
+        # 图像坐标系下的像素坐标[u, v, 1]:img_points.shape: [n, 3]
         img_points = (proj_matrix @ points_hcoords.T).T
+        # logging.info(img_points.shape)
+        # 放缩后的像素坐标[n , 2]
         img_points = img_points[:, :2] / np.expand_dims(img_points[:, 2], axis=1)  # scale 2D points
+        # 选出落在图像范围内的点
         keep_idx_img_pts = self.select_points_in_frustum(img_points, 0, 0, *image.size)
         keep_idx[keep_idx] = keep_idx_img_pts
 
         # fliplr so that indexing is row, col and not col, row
         img_points = np.fliplr(img_points)
+        # points_img.shape: [n, 2]
+        logging.info("keep_idx_img_pts: {}".format(keep_idx_img_pts))
         points_img = img_points[keep_idx_img_pts]
+        # logging.info(points_img.shape)
+        # stop_here()
 
         ### 3D Augmentation ###
         # random data augmentation by rotation
@@ -193,7 +216,10 @@ class point_image_dataset_semkitti(data.Dataset):
 
         img_label = labels[keep_idx]
         point2img_index = np.arange(len(labels))[keep_idx]
+        # 包含点云强度的特征: [n, 4]
         feat = np.concatenate((xyz, sig), axis=1)
+        # logging.info(feat.shape)
+        # stop_here()
 
         ### 2D Augmentation ###
         if self.bottom_crop:
@@ -254,6 +280,11 @@ class point_image_dataset_semkitti(data.Dataset):
         data_dict['img_indices'] = img_indices
         data_dict['img_label'] = img_label
         data_dict['point2img_index'] = point2img_index
+
+        # logging.info("🚀" * 5 + "-stop-" + "🚀" * 5)
+        # for k in data_dict.keys():
+        #     logging.info(k)
+        # stop_here()
 
         return data_dict
 
@@ -811,6 +842,7 @@ class voxel_dataset(data.Dataset):
         return data_dict
 
 
+# 用于在构建dataloader时将一个batch的data进行处理
 @register_collate_fn
 def collate_fn_default(data):
     point_num = [d['point_num'] for d in data]
@@ -831,6 +863,19 @@ def collate_fn_default(data):
     points = [torch.from_numpy(d['point_feat']) for d in data]
     ref_xyz = [torch.from_numpy(d['ref_xyz']) for d in data]
     labels = [torch.from_numpy(d['point_label']) for d in data]
+
+    # logging.info("points[0].shape: {}".format(points[0].shape))
+    # logging.info("ref_xyz[0].shape: {}".format(ref_xyz[0].shape))
+    # logging.info("batch_idx.shape: {}".format(b_idx[0].shape))
+    # logging.info("labels.shape: {}".format(labels[0].shape))
+    # logging.info("raw_labels.shape: {}".format(ref_labels.shape))
+    # logging.info("origin_len: {}".format(origin_len))
+    # logging.info("point2img_index.shape: {}".format(point2img_index[0].shape))
+    # logging.info("img[0].shape: {}".format(img[0].shape))
+    # logging.info("img_indices[0].shape: {}".format(img_indices[0].shape))
+    # logging.info("img_label.shape: {}".format(img_label[0].shape))
+    # logging.info("path: {}".format(path))
+    # stop_here()
 
     return {
         'points': torch.cat(points).float(),

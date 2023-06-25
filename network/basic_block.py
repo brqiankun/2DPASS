@@ -13,6 +13,11 @@ import torch.nn.functional as F
 from torchvision.models.resnet import resnet34
 from utils.lovasz_loss import lovasz_softmax
 
+import logging
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
+def stop_here():
+    raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
+
 
 class SparseBasicBlock(spconv.SparseModule):
     def __init__(self, in_channels, out_channels, indice_key):
@@ -95,11 +100,24 @@ class ResNetFCN(nn.Module):
         layer3_out = self.layer3(layer2_out)
         layer4_out = self.layer4(layer3_out)
 
+        logging.info("layer1_out.shape:{}".format(layer1_out.shape))
+        logging.info("layer2_out.shape:{}".format(layer2_out.shape))
+        logging.info("layer3_out.shape:{}".format(layer3_out.shape))
+        logging.info("layer4_out.shape:{}".format(layer4_out.shape))
+
         # Deconv
         layer1_out = self.deconv_layer1(layer1_out)
         layer2_out = self.deconv_layer2(layer2_out)
         layer3_out = self.deconv_layer3(layer3_out)
         layer4_out = self.deconv_layer4(layer4_out)
+
+        logging.info("x.shape:{}".format(x.shape))
+        logging.info("conv1_out.shape:{}".format(conv1_out.shape))
+        logging.info("layer1_out.shape:{}".format(layer1_out.shape))
+        logging.info("layer2_out.shape:{}".format(layer2_out.shape))
+        logging.info("layer3_out.shape:{}".format(layer3_out.shape))
+        logging.info("layer4_out.shape:{}".format(layer4_out.shape))
+        # stop_here()
 
         data_dict['img_scale2'] = layer1_out
         data_dict['img_scale4'] = layer2_out
@@ -108,15 +126,24 @@ class ResNetFCN(nn.Module):
 
         process_keys = [k for k in data_dict.keys() if k.find('img_scale') != -1]
         img_indices = data_dict['img_indices']
+        logging.info("process_keys: {}".format(process_keys))
+        logging.info("img_indices[0]: {}".format(img_indices[0].shape))
+        for k in process_keys:
+            logging.info("data_dict[{}].shape: {}".format(k, data_dict[k].shape))
 
         temp = {k: [] for k in process_keys}
 
         for i in range(x.shape[0]):
             for k in process_keys:
-                temp[k].append(data_dict[k].permute(0, 2, 3, 1)[i][img_indices[i][:, 0], img_indices[i][:, 1]])
+                logging.info("{} : {}".format(k, data_dict[k].permute(0, 2, 3, 1)[i][img_indices[i][:, 0], img_indices[i][:, 1]].shape))
+                temp[k].append(data_dict[k].permute(0, 2, 3, 1)[i][img_indices[i][:, 0], img_indices[i][:, 1]])  # 同一个batch内相同scale的能够与点云对应的图像特征添加到对应scale，作为对应image_scale的图像特征
 
         for k in process_keys:
-            data_dict[k] = torch.cat(temp[k], 0)
+            logging.info("temp[k][0].shape: {}".format(temp[k][0].shape))
+            data_dict[k] = torch.cat(temp[k], 0)       # 将一个batch的相同scale的图像特征进行cat
+            logging.info("data_dict[{}].shape: {}".format(k, data_dict[k].shape))
+        
+        # stop_here()
 
         return data_dict
 

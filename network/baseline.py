@@ -50,30 +50,45 @@ class point_encoder(nn.Module):
     def downsample(coors, p_fea, scale=2):
         batch = coors[:, 0:1]
         coors = coors[:, 1:] // scale
-        inv = torch.unique(torch.cat([batch, coors], 1), return_inverse=True, dim=0)[1]
+        inv = torch.unique(torch.cat([batch, coors], 1), return_inverse=True, dim=0)[1]   # 得到相邻体素特征的索引
         return torch_scatter.scatter_mean(p_fea, inv, dim=0), inv
 
     def forward(self, features, data_dict):
-        output, inv = self.downsample(data_dict['coors'], features)
+        logging.info("features.size: {}".format(features.shape))
+        logging.info("data_dict['coors']: {}".format(data_dict['coors'].shape))
+        
+        output, inv = self.downsample(data_dict['coors'], features)   # 对非空体素对应的特征进行下采样
+        logging.info("output: {}".format(output.shape))
         identity = self.layer_in(features)
-        output = self.PPmodel(output)[inv]
+        output = self.PPmodel(output)[inv]   # 体素数量恢复
+        logging.info("identity: {}".format(identity.shape))
+        logging.info("output: {}".format(output.shape))
         output = torch.cat([identity, output], dim=1)
+        logging.info("output: {}".format(output.shape))
 
-        v_feat = torch_scatter.scatter_mean(
+        p_feat = torch_scatter.scatter_mean(
             self.layer_out(output[data_dict['coors_inv']]),
             data_dict['scale_{}'.format(self.scale)]['coors_inv'],
             dim=0
         )
+        logging.info("p_feat: {}".format(p_feat.shape))
+        # stop_here()
         data_dict['coors'] = data_dict['scale_{}'.format(self.scale)]['coors']
         data_dict['coors_inv'] = data_dict['scale_{}'.format(self.scale)]['coors_inv']
         data_dict['full_coors'] = data_dict['scale_{}'.format(self.scale)]['full_coors']
 
-        return v_feat
+        return p_feat
 
 
 class SPVBlock(nn.Module):
     def __init__(self, in_channels, out_channels, indice_key, scale, last_scale, spatial_shape):
         super(SPVBlock, self).__init__()
+        logging.info("in_channels: {}".format(in_channels))
+        logging.info("out_channels: {}".format(out_channels))
+        logging.info("indice_key: {}".format(indice_key))
+        logging.info("scale: {}".format(scale))
+        logging.info("last_scale: {}".format(last_scale))
+        logging.info("spatial_shape: {}".format(spatial_shape))
         self.scale = scale
         self.indice_key = indice_key
         self.layer_id = indice_key.split('_')[1]
@@ -92,9 +107,11 @@ class SPVBlock(nn.Module):
         # voxel encoder
         v_fea = self.v_enc(data_dict['sparse_tensor'])
         data_dict['layer_{}'.format(self.layer_id)] = {}
-        data_dict['layer_{}'.format(self.layer_id)]['pts_feat'] = v_fea.features
-        data_dict['layer_{}'.format(self.layer_id)]['full_coors'] = data_dict['full_coors']
+        data_dict['layer_{}'.format(self.layer_id)]['pts_feat'] = v_fea.features      # 点云在不同scale进行spconv后得到的特征
+        data_dict['layer_{}'.format(self.layer_id)]['full_coors'] = data_dict['full_coors']  # layer_i对应
         v_fea_inv = torch_scatter.scatter_mean(v_fea.features[coors_inv_last], coors_inv, dim=0)
+        logging.info("layer_{}['pts_feat'].shape: {}".format(self.layer_id, data_dict['layer_{}'.format(self.layer_id)]['pts_feat'].shape))
+        logging.info("layer_{}['full_coors'].shape: {}".format(self.layer_id, data_dict['layer_{}'.format(self.layer_id)]['full_coors'].shape))
 
         # point encoder
         p_fea = self.p_enc(
@@ -110,9 +127,10 @@ class SPVBlock(nn.Module):
             batch_size=data_dict['batch_size']
         )
 
-        return p_fea[coors_inv]
+        logging.info("coors_inv: {}".format(coors_inv.shape))
+        return p_fea[coors_inv]   # 返回时将每个点的特征设置为它所处scale voxel的特征
 
-
+# SPVCNN
 class get_model(LightningBaseModel):
     def __init__(self, config):
         super(get_model, self).__init__(config)
@@ -129,6 +147,7 @@ class get_model(LightningBaseModel):
                                 [min_volume_space[2], max_volume_space[2]]]
         self.spatial_shape = np.array(config['model_params']['spatial_shape'])
         self.strides = [int(scale / self.scale_list[0]) for scale in self.scale_list]
+        logging.info("self.strides: {}".format(self.strides))
 
         # voxelization
         self.voxelizer = voxelization(
@@ -156,6 +175,8 @@ class get_model(LightningBaseModel):
                 last_scale=self.scale_list[i-1] if i > 0 else 1,
                 spatial_shape=np.int32(self.spatial_shape // self.strides[i])[::-1].tolist())
             )
+        logging.info(self.spv_enc)
+        # stop_here()
 
         # decoder layer
         self.classifier = nn.Sequential(
@@ -170,21 +191,34 @@ class get_model(LightningBaseModel):
     def forward(self, data_dict):
         with torch.no_grad():
             # for k in data_dict.keys():
-            #     logging.info(k)
+            #     logging.info(k) 
             # stop_here()
             data_dict = self.voxelizer(data_dict)
-            for k in data_dict.keys():
-                logging.info(k)
-            stop_here()
+            # for k in data_dict.keys():
+            #     logging.info(k)
+            # stop_here()
 
         data_dict = self.voxel_3d_generator(data_dict)
+        # for k in data_dict.keys():
+        #     logging.info(k)
+        # stop_here()
 
         enc_feats = []
         for i in range(self.num_scales):
-            enc_feats.append(self.spv_enc[i](data_dict))
+            enc_feats.append(self.spv_enc[i](data_dict))  # 不同scale对应的encoder_feature
+
+        for k in data_dict.keys():
+            logging.info(k)
+        # stop_here()
+        for _, iter in enumerate(enc_feats):
+            logging.info("enc_feats[{}].shape: {}".format(_, iter.shape))
 
         output = torch.cat(enc_feats, dim=1)
+        logging.info("output.shape: {}".format(output.shape))
+        # stop_here()
         data_dict['logits'] = self.classifier(output)
+        logging.info("data_dict['logits'].shape: {}".format(data_dict['logits'].shape))
+        # stop_here()
 
         data_dict['loss'] = 0.
         data_dict = self.criterion(data_dict)

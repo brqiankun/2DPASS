@@ -7,6 +7,11 @@ from torch.utils import data
 from pathlib import Path
 from nuscenes.utils import splits
 
+import logging
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
+def stop_here():
+    raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
+
 REGISTERED_PC_DATASET_CLASSES = {}
 
 
@@ -126,6 +131,8 @@ class SemanticKITTI(data.Dataset):
         data_dict['origin_len'] = origin_len
         data_dict['img'] = image
         data_dict['proj_matrix'] = proj_matrix
+
+        # logging.info(("🚀" * 5 + "-stop-" + "🚀" * 5))
 
         return data_dict, self.im_idx[index]
 
