@@ -14,7 +14,7 @@ from torchvision.models.resnet import resnet34
 from utils.lovasz_loss import lovasz_softmax
 
 import logging
-logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.WARNING)
 def stop_here():
     raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
 

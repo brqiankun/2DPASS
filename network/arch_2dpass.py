@@ -10,7 +10,7 @@ from network.base_model import LightningBaseModel
 from network.basic_block import ResNetFCN
 
 import logging
-logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.WARNING)
 def stop_here():
     raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
 
@@ -169,7 +169,7 @@ class xModalKD(nn.Module):
         loss += self.seg_loss(img_seg_logits, data_dict['img_label'])
         data_dict['loss'] += loss
 
-        stop_here()
+        # stop_here()
 
         return data_dict
 
@@ -208,7 +208,7 @@ class get_model(LightningBaseModel):
         # stop_here()
 
         # training with 2D network
-        if True or self.training and not self.baseline_only:  # True
+        if self.training and not self.baseline_only:  # 设置为True，进行在测试模式下测试2d network
             data_dict = self.model_2d(data_dict)   # 提取出图像特征
             # for k in data_dict.keys():
             #     logging.info(k)

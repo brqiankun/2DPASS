@@ -26,7 +26,7 @@ except:
 
 
 import logging
-logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.WARNING)
 def stop_here():
     raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
 

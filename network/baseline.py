@@ -18,7 +18,7 @@ from network.basic_block import SparseBasicBlock
 from network.voxel_fea_generator import voxel_3d_generator, voxelization
 
 import logging
-logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.WARNING)
 def stop_here():
     raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
 

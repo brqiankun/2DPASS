@@ -70,8 +70,9 @@ If you find our work useful in your research, please consider citing:
 - yaml
 - easydict  `conda install -c conda-forge easydict` done
 - pyquaternion   四元数库 `conda install -c conda-forge quaternion`  this `pip install pyquaternion` (http://kieranwynn.github.io/pyquaternion/)  done
-- [lightning](https://github.com/Lightning-AI/lightning) (https://lightning.ai/docs/pytorch/latest/)  (tested with pytorch_lightning==1.3.8 and torchmetrics==0.5)  `pip install pytorch_lightning==1.3.8 pip install torchmetrics==0.5`
-`conda install lightning -c conda-forge` done
+- [lightning](https://github.com/Lightning-AI/lightning) (https://lightning.ai/docs/pytorch/latest/)  (tested with pytorch_lightning==1.3.8 and torchmetrics==0.5)  `pip install pytorch_lightning==1.3.8 pip install torchmetrics==0.5`  `conda install lightning -c conda-forge` done  
+https://pytorch-lightning.readthedocs.io/en/1.3.8/api_references.html 
+https://lightning.ai/docs/pytorch/LTS/past_versions.html
 - [torch-scatter](https://github.com/rusty1s/pytorch_scatter) (pip install torch-scatter -f https://data.pyg.org/whl/torch-1.9.0+${CUDA}.html) done
 - [nuScenes-devkit](https://github.com/nutonomy/nuscenes-devkit) `pip install nuscenes-devkit` done (optional for nuScenes)
 - [spconv](https://github.com/traveller59/spconv) (tested with spconv==2.1.16 and cuda==11.1, pip install spconv-cu111==2.1.16) done 
@@ -128,11 +129,20 @@ Please download the Full dataset (v1.0) from the [NuScenes website](https://www.
 ### SemanticKITTI
 You can run the training with
 batch_size 设置为2可以训练， 1个epoch 2:40:00  
+显存占用
+7031MiB /  8188MiB
+loss=12.9
 ```shell script
 cd <root dir of this repo>
 python main.py --log_dir 2DPASS_semkitti --config config/2DPASS-semantickitti.yaml --gpu 0
+
+python main.py --log_dir 2DPASS_semkitti --config=./config/2DPASS-semantickitti.yaml --gpu 0 --save_top_k -1 --every_n_train_steps 500 --checkpoint=./checkpoint/best_model.ckpt
 ```
 The output will be written to `logs/SemanticKITTI/2DPASS_semkitti` by default. 
+
+
+
+
 ### NuScenes
 ```shell script
 cd <root dir of this repo>
@@ -148,13 +158,18 @@ python main.py --log_dir baseline_semkitti --config config/2DPASS-semantickitti.
 
 ## Testing
 You can run the testing with
+显存占用
+2205MiB /  8188MiB
 ```shell script
 cd <root dir of this repo>
 python main.py --config config/2DPASS-semantickitti.yaml --gpu 0 --test --num_vote 12 --checkpoint <dir for the pytorch checkpoint>
 
-python main.py --config checkpoint/2DPASS-semantickitti.yaml --gpu 0 --test --num_vote 1 --checkpoint checkpoint/best_model.ckpt
+python main.py --config config/2DPASS-semantickitti.yaml --gpu 0 --test --num_vote 1 --checkpoint checkpoint/best_model.ckpt
 ```
 Here, `num_vote` is the number of views for the test-time-augmentation (TTA). We set this value to 12 as default (on a Tesla-V100 GPU), and if you use other GPUs with smaller memory, you can choose a smaller value. `num_vote=1` denotes there is no TTA used, and will cause about ~2\% performance drop.
+
+
+
 
 ## Robustness Evaluation
 Please download all subsets of [SemanticKITTI-C](https://arxiv.org/pdf/2301.00970.pdf) from [this link](https://cuhko365-my.sharepoint.com/personal/218012048_link_cuhk_edu_cn/_layouts/15/onedrive.aspx?id=%2Fpersonal%2F218012048%5Flink%5Fcuhk%5Fedu%5Fcn%2FDocuments%2FSemanticKITTIC&ga=1) and extract them.
@@ -216,6 +231,8 @@ This repository is released under MIT License (see LICENSE file for details).
 在实践中，通过利用辅助模态融合和多尺度融合到单一知识蒸馏 （MSFSKD），2DPASS 从多模态数据中获取更丰富的语义和结构信息，然后将其提炼到纯 3D 网络中。因此，我们的基线模型在配备 2DPASS 后仅使用点云输入即可获得显着改进。
 
 ```
+python main.py --config checkpoint/2DPASS-semantickitti.yaml --gpu 0 --test --num_vote 1 --checkpoint ./checkpoint/best_model.ckpt
+
 please install torchsparse if you want to run spvcnn/minkowskinet!
 {'format_version': 1, 'model_params': {'model_architecture': 'arch_2dpass', 'input_dims': 4, 'spatial_shape': [1000, 1000, 60], 'scale_list': [2, 4, 8, 16], 'hiden_size': 64, 'num_classes': 20, 'backbone_2d': 'resnet34', 'pretrained2d': False}, 'dataset_params': {'training_size': 19132, 'dataset_type': 'point_image_dataset_semkitti', 'pc_dataset_type': 'SemanticKITTI', 'collate_type': 'collate_fn_default', 'ignore_label': 0, 'label_mapping': './config/label_mapping/semantic-kitti.yaml', 'bottom_crop': [480, 320], 'color_jitter': [0.4, 0.4, 0.4], 'flip2d': 0.5, 'image_normalizer': [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]], 'max_volume_space': [50, 50, 2], 'min_volume_space': [-50, -50, -4], 'seg_labelweights': [0, 55437630, 320797, 541736, 2578735, 3274484, 552662, 184064, 78858, 240942562, 17294618, 170599734, 6369672, 230413074, 101130274, 476491114, 9833174, 129609852, 4506626, 1168181], 'train_data_loader': {'data_path': './dataset/SemanticKitti/dataset/sequences/', 'batch_size': 8, 'shuffle': True, 'num_workers': 8, 'rotate_aug': True, 'flip_aug': True, 'scale_aug': True, 'transform_aug': True, 'dropout_aug': True}, 'val_data_loader': {'data_path': './dataset/SemanticKitti/dataset/sequences/', 'shuffle': False, 'num_workers': 8, 'batch_size': 1, 'rotate_aug': False, 'flip_aug': False, 'scale_aug': False, 'transform_aug': False, 'dropout_aug': False}}, 'train_params': {'max_num_epochs': 64, 'learning_rate': 0.24, 'optimizer': 'SGD', 'lr_scheduler': 'CosineAnnealingWarmRestarts', 'momentum': 0.9, 'nesterov': True, 'weight_decay': 0.0001, 'lambda_seg2d': 1, 'lambda_xm': 0.05}, 'gpu': [0], 'seed': 0, 'config_path': 'checkpoint/2DPASS-semantickitti.yaml', 'log_dir': 'default', 'monitor': 'val/mIoU', 'stop_patience': 50, 'save_top_k': 1, 'check_val_every_n_epoch': 1, 'SWA': False, 'baseline_only': False, 'test': True, 'fine_tune': False, 'pretrain2d': False, 'num_vote': 1, 'submit_to_server': False, 'checkpoint': 'checkpoint/best_model.ckpt', 'debug': False}
 Global seed set to 0
@@ -712,7 +729,103 @@ Sparse Point-Voxel Convolution
 两个分支通过稀疏体素化和反体素化来进行结合
 
 使用GPU hash table来加速稀疏voxel化和反voxel
-spconv
+spconv 中已经实现了吗？pytorch_scatter
+
+### 3D Semantic Segmentation with Submanifold(子流形) Sparse Convolutional Networks
+引入了新的sparse convolutional operation来更高效地处理spatially-sparse data
+并没有扩展sparse数据，而是在整个网络中保持相同的稀疏性，这样可以搭建更多层的网络。
+submanifold sparse convolution 
+Oct-trees/Kd-trees
+
+d-dimensional convolutional network
+常规卷积操作并没有适应具有稀疏特点的特征
+(d + 1)-dimenional tensor -> d-dimensional convolutional network
+d-dim的site，每个对应一个特征向量。对于非0的特征，site定义为activate
+相对d-dim的输入，增加1维来标记当前特征是否为activate(可以根据阈值来设置)
+每一层的活动状态决定下一层是否活动。非活动的特征向量都保持ground state。因此在训练时，每次前向传播只需计算一次，而测试时，对所有正向传播只需计算一次，节省计算和内存使用。
+在多层卷积网络中，1个activate site的卷积，1 activate -> 3 activate -> 5 activate 即存在扩张问题
+**稀疏性在常规卷积几次后会很快消失**
+解决submanifold dilation的方法:
+**限制卷积的输出为仅包括活动输入点的集合**
+上述方案可能使网络中的隐藏层不能接收输入输入数据中所有需要分类的信息。两个相邻连接的组件被独立处理。
+通过使用包含池化的卷积网络或跨步卷积操作来解决上述问题。它们允许信息在输入中断开连接的组件之间流动。？？
+空间上越接近的组件所需要的跨步操作越少。
+
+sparse convolutinal operation
+sparse convolution SC(m, n, f, s), m input feature planes, n output feature planes, a filter size of f, stride s.
+查找感受野中是否有activate site. 若input的size是l，output的size是(l - f + s) / s. SC丢弃位于ground state的非活跃input. 可以大大减少计算成本。
+
+Submanifold sparse convolution
+SSC(m, n, f)
+假设f为一个奇数, 将SC(m, n, f, s = 1)修改为SSC。
+1. pad the input with (f - 1) / 2 zeros on each side，so that the output will have the same size as the input.
+2. restrict an output site to be activate if the site at the corresponding site in the input is activate.(if the central site in the receptive field is activate)
+3. compute the output feature vector which output site is activate
+
+**BN**常规BN仅应用于处于activate状态的位置。
+Max-pooling MP(f, s)和average-pooling AP(f, s)定义为SC(., ., f, s)的变种。
+定义反卷积deconvolution DC(., ., f, s)作为SC的逆
+
+将输入/隐藏层的状态存储为2个部分, 一个hash表和一个矩阵。矩阵[a, m]包括a个活动sites，每行表示一个。
+hash表包含(location, row)对，表示所有的活动sites，location表示整数坐标，row表示特征矩阵对应行
+使用gpu来加速spconv，本质上也是矩阵乘加
+
+
+**为啥在best_model.ckpt上fine tune 会使得mIoU下降 ?**
+python main.py --log_dir 2DPASS_semkitti --config=./config/2DPASS-semantickitti.yaml --gpu 0 --save_top_k -1 --every_n_train_steps 500 --checkpoint=./checkpoint/best_model.ckpt
+#### 0626 test
+(2dpass) bairui@LAPTOP-NA9RUBN7:~/program/2dpass$ python main.py --config checkpoint/2DPASS-semantickitti.yaml --gpu 0 --test --num_vote 1 --checkpoint ./logs/SemanticKITTI/2DPASS_semkitti/version_10/checkpoints/last.ckpt
+please install torchsparse if you want to run spvcnn/minkowskinet!
+{'format_version': 1, 'model_params': {'model_architecture': 'arch_2dpass', 'input_dims': 4, 'spatial_shape': [1000, 1000, 60], 'scale_list': [2, 4, 8, 16], 'hiden_size': 64, 'num_classes': 20, 'backbone_2d': 'resnet34', 'pretrained2d': False}, 'dataset_params': {'training_size': 19132, 'dataset_type': 'point_image_dataset_semkitti', 'pc_dataset_type': 'SemanticKITTI', 'collate_type': 'collate_fn_default', 'ignore_label': 0, 'label_mapping': './config/label_mapping/semantic-kitti.yaml', 'bottom_crop': [480, 320], 'color_jitter': [0.4, 0.4, 0.4], 'flip2d': 0.5, 'image_normalizer': [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]], 'max_volume_space': [50, 50, 2], 'min_volume_space': [-50, -50, -4], 'seg_labelweights': [0, 55437630, 320797, 541736, 2578735, 3274484, 552662, 184064, 78858, 240942562, 17294618, 170599734, 6369672, 230413074, 101130274, 476491114, 9833174, 129609852, 4506626, 1168181], 'train_data_loader': {'data_path': './dataset/SemanticKitti/dataset/sequences/', 'batch_size': 8, 'shuffle': True, 'num_workers': 8, 'rotate_aug': True, 'flip_aug': True, 'scale_aug': True, 'transform_aug': True, 'dropout_aug': True}, 'val_data_loader': {'data_path': './dataset/SemanticKitti/dataset/sequences/', 'shuffle': False, 'num_workers': 8, 'batch_size': 1, 'rotate_aug': False, 'flip_aug': False, 'scale_aug': False, 'transform_aug': False, 'dropout_aug': False}}, 'train_params': {'max_num_epochs': 64, 'learning_rate': 0.24, 'optimizer': 'SGD', 'lr_scheduler': 'CosineAnnealingWarmRestarts', 'momentum': 0.9, 'nesterov': True, 'weight_decay': 0.0001, 'lambda_seg2d': 1, 'lambda_xm': 0.05}, 'gpu': [0], 'seed': 0, 'config_path': 'checkpoint/2DPASS-semantickitti.yaml', 'log_dir': 'default', 'monitor': 'val/mIoU', 'stop_patience': 50, 'save_top_k': 1, 'check_val_every_n_epoch': 1, 'SWA': False, 'baseline_only': False, 'every_n_train_steps': 100, 'test': True, 'fine_tune': False, 'pretrain2d': False, 'num_vote': 1, 'submit_to_server': False, 'checkpoint': './logs/SemanticKITTI/2DPASS_semkitti/version_10/checkpoints/last.ckpt', 'debug': False}
+Global seed set to 0
+load pre-trained model...
+Start testing...
+GPU available: True, used: True
+TPU available: False, using: 0 TPU cores
+Global seed set to 0
+initializing ddp: GLOBAL_RANK: 0, MEMBER: 1/1
+----------------------------------------------------------------------------------------------------
+distributed_backend=nccl
+All DDP processes registered. Starting ddp with 1 processes
+----------------------------------------------------------------------------------------------------
+
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+Validation per class iou:
+car : 85.39%
+bicycle : 36.98%
+motorcycle : 40.46%
+truck : 0.00%
+bus : 19.62%
+person : 51.02%
+bicyclist : 66.21%
+motorcyclist : 0.00%
+road : 80.95%
+parking : 21.19%
+sidewalk : 61.26%
+other-ground : 0.01%
+building : 83.24%
+fence : 46.78%
+vegetation : 84.27%
+trunk : 55.92%
+terrain : 66.84%
+pole : 52.57%
+traffic-sign : 39.70%
+Current val miou is 46.969 while the best val miou is 46.969
+Testing: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4071/4071 [06:24<00:00, 10.58it/s]
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{'val/acc': 0.825825035572052,
+ 'val/best_miou': 0.46968674243709513,
+ 'val/mIoU': 0.46968674243709513}
+--------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
 
 

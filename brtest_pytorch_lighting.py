@@ -31,30 +31,33 @@ class LitAutoEncoder(pl.LightningModule):
         optimizer = optim.Adam(self.parameters(), lr=1e-3)
         return optimizer
 
+def test():
+    # init the autoencoder
+    autoencoder = LitAutoEncoder(encoder, decoder)
 
-# init the autoencoder
-autoencoder = LitAutoEncoder(encoder, decoder)
+    dataset = MNIST(os.getcwd(), download=True, transform=ToTensor())
+    train_loader = utils.data.DataLoader(dataset)
 
-dataset = MNIST(os.getcwd(), download=True, transform=ToTensor())
-train_loader = utils.data.DataLoader(dataset)
+    # train the model
+    trainer = pl.Trainer(max_epochs=1, limit_train_batches=100)
+    trainer.fit(model=autoencoder, train_dataloader=train_loader)
 
-# train the model
-trainer = pl.Trainer(max_epochs=1, limit_train_batches=100)
-trainer.fit(model=autoencoder, train_dataloader=train_loader)
+    # raise RuntimeError("stop here")
+    # use the model
+    checkpoint = "./lightning_logs/version_0/checkpoints/epoch=0-step=99.ckpt"
+    autoencoder = LitAutoEncoder.load_from_checkpoint(checkpoint, encoder=encoder, decoder=decoder)
 
-# raise RuntimeError("stop here")
-# use the model
-checkpoint = "./lightning_logs/version_0/checkpoints/epoch=0-step=99.ckpt"
-autoencoder = LitAutoEncoder.load_from_checkpoint(checkpoint, encoder=encoder, decoder=decoder)
+    # choose your trained nn.Moudle
+    encoder = autoencoder.encoder
+    encoder.eval()
 
-# choose your trained nn.Moudle
-encoder = autoencoder.encoder
-encoder.eval()
+    # embed 4 fake images
+    fake_image_batch = Tensor(4, 28 * 28)
+    embeddings = encoder(fake_image_batch)
+    print("⚡" * 20, "\nPredictions (4 image embeddings):\n", embeddings, "\n", "⚡" * 20)
 
-# embed 4 fake images
-fake_image_batch = Tensor(4, 28 * 28)
-embeddings = encoder(fake_image_batch)
-print("⚡" * 20, "\nPredictions (4 image embeddings):\n", embeddings, "\n", "⚡" * 20)
+
+
 
 
 

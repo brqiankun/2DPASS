@@ -28,7 +28,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import logging
-logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.WARNING)
 def stop_here():
     raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
 
@@ -55,6 +55,7 @@ def parse_config():
     parser.add_argument('--check_val_every_n_epoch', type=int, default=1, help='check_val_every_n_epoch')
     parser.add_argument('--SWA', action='store_true', default=False, help='StochasticWeightAveraging')
     parser.add_argument('--baseline_only', action='store_true', default=False, help='training without 2D')
+    parser.add_argument('--every_n_train_steps', type=int, default=3000, help='save checkpoint at every N training steps by specify every_n_train_steps=N')
     # testing
     parser.add_argument('--test', action='store_true', default=False, help='test mode')
     parser.add_argument('--fine_tune', action='store_true', default=False, help='fine tune mode')
@@ -174,7 +175,7 @@ if __name__ == '__main__':
     train_dataset_loader, val_dataset_loader, test_dataset_loader = build_loader(configs)
     model_file = importlib.import_module('network.' + configs['model_params']['model_architecture'])
     my_model = model_file.get_model(configs)
-    # logging.info(my_model)
+    logging.info(my_model)
     # logging.info(type(my_model))
     # logging.info("{}\n{}\n{}".format(train_dataset_loader, val_dataset_loader, test_dataset_loader))
     # stop_here()
@@ -184,7 +185,9 @@ if __name__ == '__main__':
         monitor=configs.monitor,
         mode='max',
         save_last=True,
-        save_top_k=configs.save_top_k)
+        save_top_k=configs.save_top_k,
+        every_n_train_steps=configs.every_n_train_steps
+    )
 
     if configs.checkpoint is not None:
         print('load pre-trained model...')
