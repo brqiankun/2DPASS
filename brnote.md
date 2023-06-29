@@ -73,7 +73,8 @@ If you find our work useful in your research, please consider citing:
 - [lightning](https://github.com/Lightning-AI/lightning) (https://lightning.ai/docs/pytorch/latest/)  (tested with pytorch_lightning==1.3.8 and torchmetrics==0.5)  `pip install pytorch_lightning==1.3.8 pip install torchmetrics==0.5`  `conda install lightning -c conda-forge` done  
 https://pytorch-lightning.readthedocs.io/en/1.3.8/api_references.html 
 https://lightning.ai/docs/pytorch/LTS/past_versions.html
-- [torch-scatter](https://github.com/rusty1s/pytorch_scatter) (pip install torch-scatter -f https://data.pyg.org/whl/torch-1.9.0+${CUDA}.html) done
+- [torch-scatter](https://github.com/rusty1s/pytorch_scatter) (pip install torch-scatter -f https://data.pyg.org/whl/torch-1.9.0+${CUDA}.html) 
+  `conda install pytorch-scatter -c pyg`    done
 - [nuScenes-devkit](https://github.com/nutonomy/nuscenes-devkit) `pip install nuscenes-devkit` done (optional for nuScenes)
 - [spconv](https://github.com/traveller59/spconv) (tested with spconv==2.1.16 and cuda==11.1, pip install spconv-cu111==2.1.16) done 
 - [torchsparse](https://github.com/mit-han-lab/torchsparse) (optional for MinkowskiNet and SPVCNN. sudo apt-get install libsparsehash-dev, pip install --upgrade git+https://github.com/mit-han-lab/torchsparse.git@v1.4.0)
@@ -772,8 +773,12 @@ hash表包含(location, row)对，表示所有的活动sites，location表示整
 
 
 **为啥在best_model.ckpt上fine tune 会使得mIoU下降 ?**
+**问题已经解决，因为初始设置lr太大，设置为1e-5之后fine-tune即可**
+
 python main.py --log_dir 2DPASS_semkitti --config=./config/2DPASS-semantickitti.yaml --gpu 0 --save_top_k -1 --every_n_train_steps 500 --checkpoint=./checkpoint/best_model.ckpt
 #### 0626 test
+
+```
 (2dpass) bairui@LAPTOP-NA9RUBN7:~/program/2dpass$ python main.py --config checkpoint/2DPASS-semantickitti.yaml --gpu 0 --test --num_vote 1 --checkpoint ./logs/SemanticKITTI/2DPASS_semkitti/version_10/checkpoints/last.ckpt
 please install torchsparse if you want to run spvcnn/minkowskinet!
 {'format_version': 1, 'model_params': {'model_architecture': 'arch_2dpass', 'input_dims': 4, 'spatial_shape': [1000, 1000, 60], 'scale_list': [2, 4, 8, 16], 'hiden_size': 64, 'num_classes': 20, 'backbone_2d': 'resnet34', 'pretrained2d': False}, 'dataset_params': {'training_size': 19132, 'dataset_type': 'point_image_dataset_semkitti', 'pc_dataset_type': 'SemanticKITTI', 'collate_type': 'collate_fn_default', 'ignore_label': 0, 'label_mapping': './config/label_mapping/semantic-kitti.yaml', 'bottom_crop': [480, 320], 'color_jitter': [0.4, 0.4, 0.4], 'flip2d': 0.5, 'image_normalizer': [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]], 'max_volume_space': [50, 50, 2], 'min_volume_space': [-50, -50, -4], 'seg_labelweights': [0, 55437630, 320797, 541736, 2578735, 3274484, 552662, 184064, 78858, 240942562, 17294618, 170599734, 6369672, 230413074, 101130274, 476491114, 9833174, 129609852, 4506626, 1168181], 'train_data_loader': {'data_path': './dataset/SemanticKitti/dataset/sequences/', 'batch_size': 8, 'shuffle': True, 'num_workers': 8, 'rotate_aug': True, 'flip_aug': True, 'scale_aug': True, 'transform_aug': True, 'dropout_aug': True}, 'val_data_loader': {'data_path': './dataset/SemanticKitti/dataset/sequences/', 'shuffle': False, 'num_workers': 8, 'batch_size': 1, 'rotate_aug': False, 'flip_aug': False, 'scale_aug': False, 'transform_aug': False, 'dropout_aug': False}}, 'train_params': {'max_num_epochs': 64, 'learning_rate': 0.24, 'optimizer': 'SGD', 'lr_scheduler': 'CosineAnnealingWarmRestarts', 'momentum': 0.9, 'nesterov': True, 'weight_decay': 0.0001, 'lambda_seg2d': 1, 'lambda_xm': 0.05}, 'gpu': [0], 'seed': 0, 'config_path': 'checkpoint/2DPASS-semantickitti.yaml', 'log_dir': 'default', 'monitor': 'val/mIoU', 'stop_patience': 50, 'save_top_k': 1, 'check_val_every_n_epoch': 1, 'SWA': False, 'baseline_only': False, 'every_n_train_steps': 100, 'test': True, 'fine_tune': False, 'pretrain2d': False, 'num_vote': 1, 'submit_to_server': False, 'checkpoint': './logs/SemanticKITTI/2DPASS_semkitti/version_10/checkpoints/last.ckpt', 'debug': False}
@@ -818,10 +823,118 @@ DATALOADER:0 TEST RESULTS
  'val/best_miou': 0.46968674243709513,
  'val/mIoU': 0.46968674243709513}
 --------------------------------------------------------------------------------
+```
+
+
+可视化代码
+需要搞清楚输入图像的格式，尺寸, 使用dummy_image Done
+
+
+#### 1650 infer test
+```
+(cylinder3d) br@br-r7000:~/program/2dpass$ python main.py --config config/2DPASS-semantickitti.yaml --gpu 0 --test --num_vote 1 --checkpoint checkpoint/best_model.ckpt 
+please install torchsparse if you want to run spvcnn/minkowskinet!
+{'format_version': 1, 'model_params': {'model_architecture': 'arch_2dpass', 'input_dims': 4, 'spatial_shape': [1000, 1000, 60], 'scale_list': [2, 4, 8, 16], 'hiden_size': 64, 'num_classes': 20, 'backbone_2d': 'resnet34', 'pretrained2d': False}, 'dataset_params': {'training_size': 19132, 'dataset_type': 'point_image_dataset_semkitti', 'pc_dataset_type': 'SemanticKITTI', 'collate_type': 'collate_fn_default', 'ignore_label': 0, 'label_mapping': './config/label_mapping/semantic-kitti.yaml', 'bottom_crop': [480, 320], 'color_jitter': [0.4, 0.4, 0.4], 'flip2d': 0.5, 'image_normalizer': [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]], 'max_volume_space': [50, 50, 2], 'min_volume_space': [-50, -50, -4], 'seg_labelweights': [0, 55437630, 320797, 541736, 2578735, 3274484, 552662, 184064, 78858, 240942562, 17294618, 170599734, 6369672, 230413074, 101130274, 476491114, 9833174, 129609852, 4506626, 1168181], 'train_data_loader': {'data_path': './dataset/SemanticKitti/dataset/sequences/', 'batch_size': 2, 'shuffle': True, 'num_workers': 2, 'rotate_aug': True, 'flip_aug': True, 'scale_aug': True, 'transform_aug': True, 'dropout_aug': True}, 'val_data_loader': {'data_path': './dataset/SemanticKitti/dataset/sequences/', 'shuffle': False, 'num_workers': 2, 'batch_size': 1, 'rotate_aug': False, 'flip_aug': False, 'scale_aug': False, 'transform_aug': False, 'dropout_aug': False}}, 'train_params': {'max_num_epochs': 64, 'learning_rate': 1e-05, 'optimizer': 'SGD', 'lr_scheduler': 'StepLR', 'momentum': 0.9, 'nesterov': True, 'weight_decay': 0.0001, 'decay_step': 1, 'decay_rate': 0.1, 'lambda_seg2d': 1, 'lambda_xm': 0.05}, 'gpu': [0], 'seed': 0, 'config_path': 'config/2DPASS-semantickitti.yaml', 'log_dir': 'default', 'monitor': 'val/mIoU', 'stop_patience': 50, 'save_top_k': 1, 'check_val_every_n_epoch': 1, 'SWA': False, 'baseline_only': False, 'every_n_train_steps': 3000, 'test': True, 'fine_tune': False, 'pretrain2d': False, 'num_vote': 1, 'submit_to_server': False, 'checkpoint': 'checkpoint/best_model.ckpt', 'debug': False}
+Global seed set to 0
+load pre-trained model...
+Start testing...
+GPU available: True, used: True
+TPU available: False, using: 0 TPU cores
+Global seed set to 0
+initializing ddp: GLOBAL_RANK: 0, MEMBER: 1/1
+----------------------------------------------------------------------------------------------------
+distributed_backend=nccl
+All DDP processes registered. Starting ddp with 1 processes
+----------------------------------------------------------------------------------------------------
+
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+Validation per class iou:                                                                                
+car : 96.83%
+bicycle : 52.55%
+motorcycle : 76.33%
+truck : 90.74%
+bus : 71.38%
+person : 78.36%
+bicyclist : 92.35%
+motorcyclist : 0.06%
+road : 93.24%
+parking : 50.75%
+sidewalk : 80.08%
+other-ground : 8.44%
+building : 92.21%
+fence : 68.27%
+vegetation : 88.37%
+trunk : 71.19%
+terrain : 74.63%
+pole : 63.92%
+traffic-sign : 53.46%
+Current val miou is 68.587 while the best val miou is 68.587
+Testing: 100%|███████████████████████████████████████████████████████| 4071/4071 [12:35<00:00,  5.39it/s]
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{'val/acc': 0.8935943841934204,
+ 'val/best_miou': 0.6858724991404082,
+ 'val/mIoU': 0.6858724991404082}
+--------------------------------------------------------------------------------
+```
+
+`python br_predict_vis.py` 可视化infer结果
+
+## TODO
+后续等新电脑回来后在越野数据集进行训练
+
+
+## Patchwork
+不同的思路, 纯cpp实现，没有深度学习方式，其几何算法是否能更有效的进行特征提取，输入到网络中？
+https://github.com/LimHyungTae/patchwork
+https://github.com/url-kaist/patchwork-plusplus
+[Patchwork++](http://www.guyuehome.com/38829)
+
+地面点云分割主要是:
+- 为了解决找到可通行区域(movable area), 
+- 还可以用于**识别跟踪物体?**, 分割地面点云可以起到降低计算复杂度(大多数都是地面点云，可以作为**预处理阶段**，先去除地面点云，降低后续计算复杂度)
+针对地面的凹凸不平以及斜坡等类别 <br>
+
+分割速度达到40Hz，算法**针对城市环境**
+
+[!patchwork_framework]()
+算法结构
+1. 点云被编码进Concentric Zone Model-based representation(基于同心圆区域模型表示)，使得点云密度分配均匀？计算复杂度低(指同心圆表示计算)   CZM 表示
+2. 之后进行Region-wise Ground Plane Fitting(区域级的地面拟合， R-GPF)， 评估每个区域的地面？
+3. Ground Likelihood Estimation(地面似然/可能性估计， GLE)，以减少假阳率  uprightness直立度，elevation高程，flatness平整度
+地面包括移动物体可通行的区域，草地，人行道等
+
+- 基于高度过滤以及RANSAC的方法无法分割陡坡，颠簸，不均匀，周围物体影响效果
+- 现有地面评估算法时效性问题，不适合预处理
+- 扫描表示(点云表示方式？)
+- elevation map-based 2.5D grid representation 基于高程图的2.5D地图表示, 用来区分是否属于地面点来将3D点云表示为2.5D格式. 无法表征陡坡，在Z变化较快时？ 到底什么是2.5D
+- 深度学习方法在实际应用
+时需要，使用环境与训练环境相近(即模型泛化能力)，传感器配置
+
+
+点云被分为两类地面点云G， 和剩余的所有点的集合Gc
+
+
+#### CZM
+concentric zone model 同心圆模型
+假设真实地面可以在小范围内(small parts)是平坦的
+针对lidar数据本身近密远疏的特点，坐标系划分存在远距离稀疏性(点云太稀疏无法找到接地层)，近距离存在可表示问题(网格太小)
+
+CZM,给网格分配了合适的密度大小，划分为不同区域，每个区域由不同大小的bin(网格)组成。同时计算不复杂。
+在论文中将同心圆划分为4个区域。每个区域包括Nrm * N
+最内层区域和最外层区域的网格划分较稀疏，来解决远距离稀疏和近距离可表示的问题，同时减少了bin(网格)的数量
+
+#### R-GPF
+Region-wise Ground Plane Fitting 区域级的地面拟合
+每个bin通过R-GPF来进行估计，之后合并部分地面点。使用Principal Component Analysis(PCA)主成分分析，相比RANSAC更快(至少2倍)。
+
+C是一个bin中点云的协方差矩阵，计算出C的3个特征值和特征向量。**对应于最小特征值的特征向量是最有可能表示对应于地面层的法向量n**。根据法向量n和单位空间的平均点计算平面系数d。
+将高度最低的bin作为地表。
 
 
 
 
+#### GLE
 
 
 

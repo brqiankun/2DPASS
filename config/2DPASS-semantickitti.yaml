@@ -103,12 +103,14 @@ dataset_params:
 ## Train params
 train_params:
   max_num_epochs: 64
-  learning_rate: 0.24
+  learning_rate: 0.0001        # 0.24
   optimizer: SGD  # [SGD, Adam]
-  lr_scheduler: CosineAnnealingWarmRestarts  # [StepLR, ReduceLROnPlateau, CosineAnnealingLR, CosineAnnealingWarmRestarts]
+  lr_scheduler: StepLR  # [StepLR, ReduceLROnPlateau, CosineAnnealingLR, CosineAnnealingWarmRestarts]
   momentum: 0.9
   nesterov: True
   weight_decay: 1.0e-4
+  decay_step: 1
+  decay_rate: 0.1
 
   lambda_seg2d: 1
   lambda_xm: 0.05

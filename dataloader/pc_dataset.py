@@ -120,7 +120,10 @@ class SemanticKITTI(data.Dataset):
                 annotated_data[annotated_data == -1] = self.config['dataset_params']['ignore_label']
 
         image_file = self.im_idx[index].replace('velodyne', 'image_2').replace('.bin', '.png')
-        image = Image.open(image_file)
+        if self.imageset == 'train':
+            image = Image.open(image_file)
+        else:
+            image = Image.new('RGB', [2048, 1024])   # dummy_image
         proj_matrix = self.proj_matrix[int(self.im_idx[index][-22:-20])]
 
         data_dict = {}
