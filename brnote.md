@@ -984,3 +984,17 @@ transforms.yaml 才是cam2lidar的变换矩阵
 q是四元数, t是平移向量
 https://www.zhihu.com/tardis/zm/art/78987582?source_id=1005
 __写一个从四元数到旋转矩阵的函数__
+
+Calibration Download:
+
+Camera Instrinsic (Download 2KB)
+
+Basler Camera to Ouster LiDAR (Download 3KB)
+
+Velodyne LiDAR to Ouster LiDAR (Download 3KB)
+
+Stereo Calibration (Download 3KB)
+
+Calibration Raw Data (Download 774MB)
+
+**注意camera to Lidar的变换矩阵需要求逆！！！！**

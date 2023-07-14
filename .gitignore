@@ -156,3 +156,4 @@ dataset/
 logs/
 MNIST/
 lightning_logs/
+dataset
