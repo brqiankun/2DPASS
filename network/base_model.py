@@ -114,7 +114,7 @@ class LightningBaseModel(pl.LightningModule):
         raw_labels = data_dict['raw_labels'].squeeze(1).cpu()
         origin_len = data_dict['origin_len']
         vote_logits = torch.zeros((len(raw_labels), self.num_classes))
-        data_dict = self.forward(data_dict)
+        data_dict = self.forward(data_dict)   # infer
 
         if self.args['test']:
             vote_logits.index_add_(0, indices.cpu(), data_dict['logits'].cpu())
@@ -186,7 +186,7 @@ class LightningBaseModel(pl.LightningModule):
                     pass
 
                 valid_labels = np.vectorize(self.mapfile['learning_map_inv'].__getitem__)
-                original_label = valid_labels(vote_logits.argmax(1).cpu().numpy().astype(int))
+                original_label = valid_labels(vote_logits.argmax(1).cpu().numpy().astype(int))  # 映射回原始label
                 final_preds = original_label.astype(np.uint32)
                 final_preds.tofile(full_label_name)
 

@@ -28,7 +28,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import logging
-logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.WARNING)
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
 def stop_here():
     raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
 
@@ -91,6 +91,7 @@ def build_loader(config):
     train_dataset_loader, val_dataset_loader, test_dataset_loader = None, None, None
     logging.info(pc_dataset)
     logging.info(dataset_type)
+    logging.info(train_config)
     # stop_here()
 
     if not config['test']:
@@ -175,7 +176,7 @@ if __name__ == '__main__':
     train_dataset_loader, val_dataset_loader, test_dataset_loader = build_loader(configs)
     model_file = importlib.import_module('network.' + configs['model_params']['model_architecture'])
     my_model = model_file.get_model(configs)
-    logging.info(my_model)
+    # logging.info(my_model)
     # logging.info(type(my_model))
     # logging.info("{}\n{}\n{}".format(train_dataset_loader, val_dataset_loader, test_dataset_loader))
     # stop_here()

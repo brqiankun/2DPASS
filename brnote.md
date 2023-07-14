@@ -69,14 +69,14 @@ If you find our work useful in your research, please consider citing:
 - pytorch >= 1.8 
 - yaml
 - easydict  `conda install -c conda-forge easydict` done
-- pyquaternion   四元数库 `conda install -c conda-forge quaternion`  this `pip install pyquaternion` (http://kieranwynn.github.io/pyquaternion/)  done
-- [lightning](https://github.com/Lightning-AI/lightning) (https://lightning.ai/docs/pytorch/latest/)  (tested with pytorch_lightning==1.3.8 and torchmetrics==0.5)  `pip install pytorch_lightning==1.3.8 pip install torchmetrics==0.5`  `conda install lightning -c conda-forge` done  
+- pyquaternion   四元数库 `conda install -c conda-forge quaternion`  this one `pip install pyquaternion` (http://kieranwynn.github.io/pyquaternion/)  done
+- [lightning](https://github.com/Lightning-AI/lightning) (https://lightning.ai/docs/pytorch/latest/)  (tested with pytorch_lightning==1.3.8 and torchmetrics==0.5)  this one `pip install pytorch_lightning==1.3.8 pip install torchmetrics==0.5`  `conda install lightning -c conda-forge` done  
 https://pytorch-lightning.readthedocs.io/en/1.3.8/api_references.html 
 https://lightning.ai/docs/pytorch/LTS/past_versions.html
 - [torch-scatter](https://github.com/rusty1s/pytorch_scatter) (pip install torch-scatter -f https://data.pyg.org/whl/torch-1.9.0+${CUDA}.html) 
-  `conda install pytorch-scatter -c pyg`    done
+  this one `conda install pytorch-scatter -c pyg`    done
 - [nuScenes-devkit](https://github.com/nutonomy/nuscenes-devkit) `pip install nuscenes-devkit` done (optional for nuScenes)
-- [spconv](https://github.com/traveller59/spconv) (tested with spconv==2.1.16 and cuda==11.1, pip install spconv-cu111==2.1.16) done 
+- [spconv](https://github.com/traveller59/spconv) (tested with spconv==2.1.16 and cuda==11.1, pip install spconv-cu111==2.1.16) this one `pip install spconv-cu117`done 
 - [torchsparse](https://github.com/mit-han-lab/torchsparse) (optional for MinkowskiNet and SPVCNN. sudo apt-get install libsparsehash-dev, pip install --upgrade git+https://github.com/mit-han-lab/torchsparse.git@v1.4.0)
 - pip install -U tensorboard
 - pip install -U tensorboardX
@@ -128,6 +128,7 @@ Please download the Full dataset (v1.0) from the [NuScenes website](https://www.
 
 ## Training
 ### SemanticKITTI
+训练集共19130帧
 You can run the training with
 batch_size 设置为2可以训练， 1个epoch 2:40:00  
 显存占用
@@ -138,10 +139,16 @@ cd <root dir of this repo>
 python main.py --log_dir 2DPASS_semkitti --config config/2DPASS-semantickitti.yaml --gpu 0
 
 python main.py --log_dir 2DPASS_semkitti --config=./config/2DPASS-semantickitti.yaml --gpu 0 --save_top_k -1 --every_n_train_steps 500 --checkpoint=./checkpoint/best_model.ckpt
+
+python main.py --log_dir 2DPASS_semkitti --config=./config/2DPASS-semantickitti.yaml --gpu 0 --fine_tune --save_top_k -1 --every_n_train_steps 500 --checkpoint=./checkpoint/pretrained/semantickitti/2DPASS_4scale_64dim/best_model.ckpt
+
+python main.py --log_dir 2DPASS_rellis --config ./config/2DPASS-RELLIS-3D-kitti-format.yaml --gpu 0
+
 ```
 The output will be written to `logs/SemanticKITTI/2DPASS_semkitti` by default. 
 
-
+### Rellis-3d
+训练集共9313  [00000, 00001, 00002]
 
 
 ### NuScenes
@@ -166,6 +173,8 @@ cd <root dir of this repo>
 python main.py --config config/2DPASS-semantickitti.yaml --gpu 0 --test --num_vote 12 --checkpoint <dir for the pytorch checkpoint>
 
 python main.py --config config/2DPASS-semantickitti.yaml --gpu 0 --test --num_vote 1 --checkpoint checkpoint/best_model.ckpt
+
+python main.py --config_path config/2DPASS-semantickitti.yaml --gpu 0 --test --num_vote 1 --checkpoint=./checkpoint/pretrained/semantickitti/2DPASS_4scale_64dim/best_model.ckpt
 ```
 Here, `num_vote` is the number of views for the test-time-augmentation (TTA). We set this value to 12 as default (on a Tesla-V100 GPU), and if you use other GPUs with smaller memory, you can choose a smaller value. `num_vote=1` denotes there is no TTA used, and will cause about ~2\% performance drop.
 
@@ -939,6 +948,39 @@ C是一个bin中点云的协方差矩阵，计算出C的3个特征值和特征�
 
 
 
+### TODO
 
+图像每帧图片的文件名格式需要修
 
+### rellis
+image  [1920, 1200]
+/home/bairui/program/2dpass/network/basic_block.py->129: process_keys: ['img_scale2', 'img_scale4', 'img_scale8', 'img_scale16']
+/home/bairui/program/2dpass/network/basic_block.py->130: img_indices[0].shape: (0, 2)   # 点云校准文件的问题，投影
+/home/bairui/program/2dpass/network/basic_block.py->132: data_dict[img_scale2].shape: torch.Size([2, 64, 320, 480])
+/home/bairui/program/2dpass/network/basic_block.py->132: data_dict[img_scale4].shape: torch.Size([2, 64, 320, 480])
+/home/bairui/program/2dpass/network/basic_block.py->132: data_dict[img_scale8].shape: torch.Size([2, 64, 320, 480])
+/home/bairui/program/2dpass/network/basic_block.py->132: data_dict[img_scale16].shape: torch.Size([2, 64, 320, 480])
+/home/bairui/program/2dpass/network/basic_block.py->138: img_scale2 : torch.Size([0, 64])
+/home/bairui/program/2dpass/network/basic_block.py->138: img_scale4 : torch.Size([0, 64])
+/home/bairui/program/2dpass/network/basic_block.py->138: img_scale8 : torch.Size([0, 64])
+/home/bairui/program/2dpass/network/basic_block.py->138: img_scale16 : torch.Size([0, 64])
 
+### kitti
+[1226, 370]
+/home/bairui/program/2dpass/network/basic_block.py->130: img_indices[0].shape: (23287, 2)
+/home/bairui/program/2dpass/network/basic_block.py->132: data_dict[img_scale2].shape: torch.Size([2, 64, 320, 480])
+/home/bairui/program/2dpass/network/basic_block.py->132: data_dict[img_scale4].shape: torch.Size([2, 64, 320, 480])
+/home/bairui/program/2dpass/network/basic_block.py->132: data_dict[img_scale8].shape: torch.Size([2, 64, 320, 480])
+/home/bairui/program/2dpass/network/basic_block.py->132: data_dict[img_scale16].shape: torch.Size([2, 64, 320, 480])
+/home/bairui/program/2dpass/network/basic_block.py->138: img_scale2 : torch.Size([7039, 64])
+/home/bairui/program/2dpass/network/basic_block.py->138: img_scale4 : torch.Size([7039, 64])
+/home/bairui/program/2dpass/network/basic_block.py->138: img_scale8 : torch.Size([7039, 64])
+/home/bairui/program/2dpass/network/basic_block.py->138: img_scale16 : torch.Size([7039, 64])
+
+rellis的校准文件是pose的校准，而不是lidar/camera的位姿变换和相机内参
+https://github.com/unmannedlab/RELLIS-3D/issues/22
+transforms.yaml 才是cam2lidar的变换矩阵
+## TODO
+q是四元数, t是平移向量
+https://www.zhihu.com/tardis/zm/art/78987582?source_id=1005
+__写一个从四元数到旋转矩阵的函数__

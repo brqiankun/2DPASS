@@ -236,6 +236,10 @@ class point_image_dataset_semkitti(data.Dataset):
             keep_idx = np.logical_and(keep_idx, points_img[:, 1] < right)
 
             # crop image
+            logging.info("left: {}".format(left))
+            logging.info("right: {}".format(right))
+            logging.info("top: {}".format(top))
+            logging.info("bottom: {}".format(bottom))
             image = image.crop((left, top, right, bottom))
             points_img = points_img[keep_idx]
             points_img[:, 0] -= top
@@ -522,6 +526,249 @@ class point_image_dataset_mix_semkitti(data.Dataset):
             cutmix_data_dict = data_dict
 
         return cutmix_data_dict
+
+
+@register_dataset
+class point_image_dataset_rellis3d(data.Dataset):
+    def __init__(self, in_dataset, config, loader_config, num_vote=1, trans_std=[0.1, 0.1, 0.1], max_dropout_ratio=0.2):
+        'Initialization'
+        self.point_cloud_dataset = in_dataset
+        self.config = config
+        self.ignore_label = config['dataset_params']['ignore_label']
+        self.rotate_aug = loader_config['rotate_aug']
+        self.flip_aug = loader_config['flip_aug']
+        self.transform = loader_config['transform_aug']
+        self.scale_aug = loader_config['scale_aug']
+        self.dropout = loader_config['dropout_aug']
+        self.instance_aug = loader_config.get('instance_aug', False)
+        self.max_volume_space = config['dataset_params']['max_volume_space']
+        self.min_volume_space = config['dataset_params']['min_volume_space']
+        self.num_vote = num_vote
+        self.trans_std = trans_std
+        self.max_dropout_ratio = max_dropout_ratio
+        self.debug = config['debug']
+
+        self.bottom_crop = config['dataset_params']['bottom_crop']
+        color_jitter = config['dataset_params']['color_jitter']
+        self.color_jitter = T.ColorJitter(*color_jitter) if color_jitter else None
+        self.flip2d = config['dataset_params']['flip2d']
+        self.image_normalizer = config['dataset_params']['image_normalizer']
+
+    def __len__(self):
+        'Denotes the total number of samples'
+        if self.debug:
+            return 100 * self.num_vote
+        else:
+            logging.info(len(self.point_cloud_dataset))
+            return len(self.point_cloud_dataset)
+
+    @staticmethod
+    def select_points_in_frustum(points_2d, x1, y1, x2, y2):
+        """
+        Select points in a 2D frustum parametrized by x1, y1, x2, y2 in image coordinates
+        :param points_2d: point cloud projected into 2D
+        :param points_3d: point cloud
+        :param x1: left bound
+        :param y1: upper bound
+        :param x2: right bound
+        :param y2: lower bound
+        :return: points (2D and 3D) that are in the frustum
+        """
+        keep_ind = (points_2d[:, 0] > x1) * \
+                   (points_2d[:, 1] > y1) * \
+                   (points_2d[:, 0] < x2) * \
+                   (points_2d[:, 1] < y2)
+
+        return keep_ind
+
+    def __getitem__(self, index):
+        'Generates one sample of data'
+        data, root = self.point_cloud_dataset[index]
+
+        xyz = data['xyz']
+        # logging.info("xyz.shape: {}".format(xyz.shape))
+        # stop_here()
+        labels = data['labels']
+        instance_label = data['instance_label'].reshape(-1)
+        sig = data['signal']
+        origin_len = data['origin_len']
+
+        ref_pc = xyz.copy()
+        ref_labels = labels.copy()
+        ref_index = np.arange(len(ref_pc))
+
+        # 筛选掉空间范围外的点
+        mask_x = np.logical_and(xyz[:, 0] > self.min_volume_space[0], xyz[:, 0] < self.max_volume_space[0])
+        mask_y = np.logical_and(xyz[:, 1] > self.min_volume_space[1], xyz[:, 1] < self.max_volume_space[1])
+        mask_z = np.logical_and(xyz[:, 2] > self.min_volume_space[2], xyz[:, 2] < self.max_volume_space[2])
+        mask = np.logical_and(mask_x, np.logical_and(mask_y, mask_z))
+
+        xyz = xyz[mask]
+        ref_pc = ref_pc[mask]
+        labels = labels[mask]
+        instance_label = instance_label[mask]
+        ref_index = ref_index[mask]
+        sig = sig[mask]
+        point_num = len(xyz)
+
+        if self.dropout and self.point_cloud_dataset.imageset == 'train':
+            dropout_ratio = np.random.random() * self.max_dropout_ratio
+            drop_idx = np.where(np.random.random((xyz.shape[0])) <= dropout_ratio)[0]
+
+            if len(drop_idx) > 0:
+                xyz[drop_idx, :] = xyz[0, :]
+                labels[drop_idx, :] = labels[0, :]
+                sig[drop_idx, :] = sig[0, :]
+                instance_label[drop_idx] = instance_label[0]
+                ref_index[drop_idx] = ref_index[0]
+
+        # load 2D data
+        image = data['img']
+        # proj_matrix.shape: (3, 4) 
+        proj_matrix = data['proj_matrix']
+        # logging.info(proj_matrix.shape)
+
+        # project points into image
+        keep_idx = xyz[:, 0] > 0  # only keep point in front of the vehicle
+        logging.info(keep_idx)
+        # stop_here()
+        # 点云的齐次坐标points_hcoords.shape: [n, 4]
+        points_hcoords = np.concatenate([xyz[keep_idx], np.ones([keep_idx.sum(), 1], dtype=np.float32)], axis=1)
+        logging.info(points_hcoords.shape)
+        logging.info(points_hcoords)
+        # stop_here()
+        logging.info(proj_matrix)
+        # 点云投影到图像坐标系下的像素坐标[u, v, 1]:img_points.shape: [n, 3]
+        img_points = (proj_matrix @ points_hcoords.T).T
+        logging.info(img_points.shape)
+        logging.info(img_points)
+        # 放缩后的像素坐标[n , 2]
+        img_points = img_points[:, :2] / np.expand_dims(img_points[:, 2], axis=1)  # scale 2D points
+        # 选出落在图像范围内的点
+        keep_idx_img_pts = self.select_points_in_frustum(img_points, 0, 0, *image.size)
+        keep_idx[keep_idx] = keep_idx_img_pts
+
+        # fliplr so that indexing is row, col and not col, row
+        img_points = np.fliplr(img_points)
+        # points_img.shape: [n, 2]
+        logging.info("keep_idx_img_pts: {}".format(keep_idx_img_pts))
+        logging.info("keep_idx_img_pts.shape: {}".format(keep_idx_img_pts.shape))
+        points_img = img_points[keep_idx_img_pts]
+        logging.info(points_img.shape)
+        # stop_here()
+
+        ### 3D Augmentation ###
+        # random data augmentation by rotation
+        if self.rotate_aug:
+            rotate_rad = np.deg2rad(np.random.random() * 360)
+            c, s = np.cos(rotate_rad), np.sin(rotate_rad)
+            j = np.matrix([[c, s], [-s, c]])
+            xyz[:, :2] = np.dot(xyz[:, :2], j)
+
+        # random data augmentation by flip x , y or x+y
+        if self.flip_aug:
+            flip_type = np.random.choice(4, 1)
+            if flip_type == 1:
+                xyz[:, 0] = -xyz[:, 0]
+            elif flip_type == 2:
+                xyz[:, 1] = -xyz[:, 1]
+            elif flip_type == 3:
+                xyz[:, :2] = -xyz[:, :2]
+
+        if self.scale_aug:
+            noise_scale = np.random.uniform(0.95, 1.05)
+            xyz[:, 0] = noise_scale * xyz[:, 0]
+            xyz[:, 1] = noise_scale * xyz[:, 1]
+
+        if self.transform:
+            noise_translate = np.array([np.random.normal(0, self.trans_std[0], 1),
+                                        np.random.normal(0, self.trans_std[1], 1),
+                                        np.random.normal(0, self.trans_std[2], 1)]).T
+
+            xyz[:, 0:3] += noise_translate
+
+        img_label = labels[keep_idx]
+        point2img_index = np.arange(len(labels))[keep_idx]
+        # 包含点云强度的特征: [n, 4]
+        feat = np.concatenate((xyz, sig), axis=1)
+        logging.info(feat.shape)
+        # stop_here()
+
+        ### 2D Augmentation ###
+        if self.bottom_crop:
+            # self.bottom_crop is a tuple (crop_width, crop_height)
+            left = int(np.random.rand() * (image.size[0] + 1 - self.bottom_crop[0]))
+            right = left + self.bottom_crop[0]
+            top = image.size[1] - self.bottom_crop[1]
+            bottom = image.size[1]
+            logging.info("left: {}".format(left))
+            logging.info("right: {}".format(right))
+            logging.info("top: {}".format(top))
+            logging.info("bottom: {}".format(bottom))
+
+            # update image points
+            keep_idx = points_img[:, 0] >= top
+            keep_idx = np.logical_and(keep_idx, points_img[:, 0] < bottom)
+            keep_idx = np.logical_and(keep_idx, points_img[:, 1] >= left)
+            keep_idx = np.logical_and(keep_idx, points_img[:, 1] < right)
+
+            # crop image
+            image = image.crop((left, top, right, bottom))
+            points_img = points_img[keep_idx]
+            logging.info(points_img.size)
+            points_img[:, 0] -= top
+            points_img[:, 1] -= left
+
+            img_label = img_label[keep_idx]
+            point2img_index = point2img_index[keep_idx]
+
+        img_indices = points_img.astype(np.int64)
+        logging.info(img_indices.shape)
+        # stop_here()
+
+        # 2D augmentation
+        if self.color_jitter is not None:
+            image = self.color_jitter(image)
+
+        # PIL to numpy
+        image = np.array(image, dtype=np.float32, copy=False) / 255.
+
+        # 2D augmentation
+        if np.random.rand() < self.flip2d:
+            image = np.ascontiguousarray(np.fliplr(image))
+            img_indices[:, 1] = image.shape[1] - 1 - img_indices[:, 1]
+
+        # normalize image
+        if self.image_normalizer:
+            mean, std = self.image_normalizer
+            mean = np.asarray(mean, dtype=np.float32)
+            std = np.asarray(std, dtype=np.float32)
+            image = (image - mean) / std
+
+        data_dict = {}
+        data_dict['point_feat'] = feat
+        data_dict['point_label'] = labels
+        data_dict['ref_xyz'] = ref_pc
+        data_dict['ref_label'] = ref_labels
+        data_dict['ref_index'] = ref_index
+        data_dict['mask'] = mask
+        data_dict['point_num'] = point_num
+        data_dict['origin_len'] = origin_len
+        data_dict['root'] = root
+
+        data_dict['img'] = image
+        data_dict['img_indices'] = img_indices
+        data_dict['img_label'] = img_label
+        data_dict['point2img_index'] = point2img_index
+
+        # logging.info("🚀" * 5 + "-stop-" + "🚀" * 5)
+        # for k in data_dict.keys():
+        #     logging.info(k)
+        # stop_here()
+
+        return data_dict
+
+
 
 
 @register_dataset

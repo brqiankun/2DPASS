@@ -14,7 +14,7 @@ from torchvision.models.resnet import resnet34
 from utils.lovasz_loss import lovasz_softmax
 
 import logging
-logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.WARNING)
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
 def stop_here():
     raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
 
@@ -127,14 +127,16 @@ class ResNetFCN(nn.Module):
         process_keys = [k for k in data_dict.keys() if k.find('img_scale') != -1]
         img_indices = data_dict['img_indices']
         logging.info("process_keys: {}".format(process_keys))
-        logging.info("img_indices[0]: {}".format(img_indices[0].shape))
+        logging.info("img_indices[0].shape: {}".format(img_indices[0].shape))
         for k in process_keys:
             logging.info("data_dict[{}].shape: {}".format(k, data_dict[k].shape))
 
         temp = {k: [] for k in process_keys}
 
+        logging.info(x.shape)
         for i in range(x.shape[0]):
             for k in process_keys:
+                # [2, 64, 320, 480] => [2, 320, 480, 64]
                 logging.info("{} : {}".format(k, data_dict[k].permute(0, 2, 3, 1)[i][img_indices[i][:, 0], img_indices[i][:, 1]].shape))
                 temp[k].append(data_dict[k].permute(0, 2, 3, 1)[i][img_indices[i][:, 0], img_indices[i][:, 1]])  # 同一个batch内相同scale的能够与点云对应的图像特征添加到对应scale，作为对应image_scale的图像特征
 
