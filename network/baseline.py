@@ -222,6 +222,7 @@ class get_model(LightningBaseModel):
 
         data_dict['loss'] = 0.
         data_dict = self.criterion(data_dict)
+        # stop_here()
 
         return data_dict
 

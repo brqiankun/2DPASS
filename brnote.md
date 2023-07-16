@@ -998,3 +998,66 @@ Stereo Calibration (Download 3KB)
 Calibration Raw Data (Download 774MB)
 
 **注意camera to Lidar的变换矩阵需要求逆！！！！**
+
+
+kitti project_matrix
+[[ 600.5601 -708.1538   -9.595  -157.5234]
+ [ 178.5233    5.3628 -708.243  -112.9227]
+ [   1.       -0.0018   -0.0065   -0.3278]]
+
+[[404.5136 150.3211]
+ [402.0969 150.3199]
+ [398.415  149.7891]
+ ...
+ [902.9288 513.8694]
+ [900.1205 513.7363]
+ [897.1249 513.5787]]
+
+
+training_size 是用来cosineAnnealingLR传入datasetsize的
+
+
+### 7 epoch  baseline_only
+(2dpass) bairui@DESKTOP-TCT7SII:~/program/2dpass$ python main.py --log_dir baseline_rellis --config config/2DPASS-RELLIS-3D-kitti-format.yaml --gpu 0 --test --checkpoint logs/Rellis3d/baseline_rellis/version_2/checkpoints/last.ckpt --baseline_only
+please install torchsparse if you want to run spvcnn/minkowskinet!
+{'format_version': 1, 'model_params': {'model_architecture': 'arch_2dpass', 'input_dims': 4, 'spatial_shape': [1000, 1000, 60], 'scale_list': [2, 4, 8, 16], 'hiden_size': 64, 'num_classes': 15, 'backbone_2d': 'resnet34', 'pretrained2d': False}, 'dataset_params': {'training_size': 11497, 'dataset_type': 'point_image_dataset_rellis3d', 'pc_dataset_type': 'Rellis3d', 'collate_type': 'collate_fn_default', 'ignore_label': 0, 'label_mapping': './config/label_mapping/rellis.yaml', 'bottom_crop': [480, 320], 'color_jitter': [0.4, 0.4, 0.4], 'flip2d': 0.5, 'image_normalizer': [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]], 'max_volume_space': [50, 50, 2], 'min_volume_space': [-50, -50, -4], 'train_data_loader': {'data_path': './dataset/rellis_data/Rellis-3D', 'batch_size': 2, 'shuffle': True, 'num_workers': 2, 'rotate_aug': True, 'flip_aug': True, 'scale_aug': True, 'transform_aug': True, 'dropout_aug': True}, 'val_data_loader': {'data_path': './dataset/rellis_data/Rellis-3D', 'shuffle': False, 'num_workers': 2, 'batch_size': 1, 'rotate_aug': False, 'flip_aug': False, 'scale_aug': False, 'transform_aug': False, 'dropout_aug': False}}, 'train_params': {'max_num_epochs': 80, 'learning_rate': 0.24, 'optimizer': 'SGD', 'lr_scheduler': 'CosineAnnealingLR', 'momentum': 0.9, 'nesterov': True, 'weight_decay': 0.0001, 'lambda_seg2d': 1, 'lambda_xm': 0.05, 'lambda_lovasz': 1}, 'gpu': [0], 'seed': 0, 'config_path': 'config/2DPASS-RELLIS-3D-kitti-format.yaml', 'log_dir': 'baseline_rellis', 'monitor': 'val/mIoU', 'stop_patience': 50, 'save_top_k': 1, 'check_val_every_n_epoch': 1, 'SWA': False, 'baseline_only': True, 'every_n_train_steps': 3000, 'test': True, 'fine_tune': False, 'pretrain2d': False, 'num_vote': 1, 'submit_to_server': False, 'checkpoint': 'logs/Rellis3d/baseline_rellis/version_2/checkpoints/last.ckpt', 'debug': False}
+Start vanilla training!
+Global seed set to 0
+load pre-trained model...
+Start vanilla training!
+Start testing...
+GPU available: True, used: True
+TPU available: False, using: 0 TPU cores
+Global seed set to 0
+initializing ddp: GLOBAL_RANK: 0, MEMBER: 1/1
+----------------------------------------------------------------------------------------------------
+distributed_backend=nccl
+All DDP processes registered. Starting ddp with 1 processes
+----------------------------------------------------------------------------------------------------
+
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+Validation per class iou:
+grass : 41.70%
+tree : 81.81%
+pole : 0.00%
+water : nan%
+vehicle : 53.97%
+log : 0.00%
+person : 90.67%
+fence : 0.00%
+bush : 40.99%
+concrete : 19.46%
+barrier : 74.91%
+puddle : 0.00%
+mud : 8.43%
+rubble : 38.96%
+Current val miou is 34.685 while the best val miou is 34.685
+Testing: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2184/2184 [02:58<00:00, 12.25it/s]
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{'val/acc': 0.30709388852119446,
+ 'val/best_miou': 0.3468513300190048,
+ 'val/mIoU': 0.3468513300190048}
+--------------------------------------------------------------------------------
+
+

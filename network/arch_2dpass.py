@@ -10,7 +10,7 @@ from network.base_model import LightningBaseModel
 from network.basic_block import ResNetFCN
 
 import logging
-logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.WARNING)
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
 def stop_here():
     raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
 
@@ -166,7 +166,9 @@ class xModalKD(nn.Module):
         logging.info("torch.cat(img_seg_feat, 1).shape: {}".format(torch.cat(img_seg_feat, 1).shape))
         img_seg_logits = self.classifier(torch.cat(img_seg_feat, 1))
         logging.info("img_seg_logits.shape: {}".format(img_seg_logits.shape))
+        logging.info("data_dict['img_label'].shape: {}".format(data_dict['img_label'].shape))
         loss += self.seg_loss(img_seg_logits, data_dict['img_label'])
+        # stop_here()
         data_dict['loss'] += loss
 
         # stop_here()
@@ -212,7 +214,7 @@ class get_model(LightningBaseModel):
             data_dict = self.model_2d(data_dict)   # 提取出图像特征
             # for k in data_dict.keys():
             #     logging.info(k)
-            # stop_here()
+            stop_here()
             data_dict = self.fusion(data_dict)   # 对能够通过投影对应的图像和点云特征进行融合后预测得到loss
             # for k in data_dict.keys():
             #     logging.info(k)

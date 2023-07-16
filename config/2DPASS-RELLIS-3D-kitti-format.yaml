@@ -25,7 +25,7 @@ model_params:
 ###################
 ## Dataset options
 dataset_params:
-  training_size: 19132
+  training_size: 11497
   dataset_type: "point_image_dataset_rellis3d"
   pc_dataset_type: "Rellis3d"
   collate_type: "collate_fn_default"
@@ -34,8 +34,8 @@ dataset_params:
 
   # 2D augmentation
   bottom_crop:
-    - 960
-    - 640
+    - 480
+    - 320
   color_jitter:
     - 0.4
     - 0.4
@@ -76,13 +76,13 @@ dataset_params:
 
   train_data_loader:
     data_path: "./dataset/rellis_data/Rellis-3D"
-    batch_size: 1
+    batch_size: 2
     shuffle: True
-    num_workers: 1
-    rotate_aug: True
-    flip_aug: True
-    scale_aug: True
-    transform_aug: True
+    num_workers: 2
+    rotate_aug: False
+    flip_aug: False
+    scale_aug: False
+    transform_aug: False
     dropout_aug: True
 
   val_data_loader:

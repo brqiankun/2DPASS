@@ -90,6 +90,7 @@ class ResNetFCN(nn.Module):
     def forward(self, data_dict):
         x = data_dict['img']
         h, w = x.shape[2], x.shape[3]
+        logging.info("img h: {}   img w: {}".format(h, w))
         if h % 16 != 0 or w % 16 != 0:
             assert False, "invalid input size: {}".format(x.shape)
 

@@ -119,5 +119,6 @@ class voxel_3d_generator(nn.Module):
         data_dict['coors'] = data_dict['scale_1']['coors']
         data_dict['coors_inv'] = data_dict['scale_1']['coors_inv']
         data_dict['full_coors'] = data_dict['scale_1']['full_coors']
+        # stop_here()
 
         return data_dict

@@ -26,7 +26,7 @@ except:
 
 
 import logging
-logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.WARNING)
+logging.basicConfig(format='%(pathname)s->%(lineno)d: %(message)s', level=logging.INFO)
 def stop_here():
     raise RuntimeError("🚀" * 5 + "-stop-" + "🚀" * 5)
 
@@ -172,6 +172,7 @@ class point_image_dataset_semkitti(data.Dataset):
         # logging.info(img_points.shape)
         # 放缩后的像素坐标[n , 2]
         img_points = img_points[:, :2] / np.expand_dims(img_points[:, 2], axis=1)  # scale 2D points
+        logging.info(img_points)
         # 选出落在图像范围内的点
         keep_idx_img_pts = self.select_points_in_frustum(img_points, 0, 0, *image.size)
         keep_idx[keep_idx] = keep_idx_img_pts
@@ -644,6 +645,8 @@ class point_image_dataset_rellis3d(data.Dataset):
         logging.info(img_points)
         # 放缩后的像素坐标[n , 2]
         img_points = img_points[:, :2] / np.expand_dims(img_points[:, 2], axis=1)  # scale 2D points
+        logging.info(img_points)
+        # raise RuntimeError
         # 选出落在图像范围内的点
         keep_idx_img_pts = self.select_points_in_frustum(img_points, 0, 0, *image.size)
         keep_idx[keep_idx] = keep_idx_img_pts
@@ -697,7 +700,7 @@ class point_image_dataset_rellis3d(data.Dataset):
         ### 2D Augmentation ###
         if self.bottom_crop:
             # self.bottom_crop is a tuple (crop_width, crop_height)
-            left = int(np.random.rand() * (image.size[0] + 1 - self.bottom_crop[0]))
+            left = int(0.5 * (image.size[0] + 1 - self.bottom_crop[0]))
             right = left + self.bottom_crop[0]
             top = image.size[1] - self.bottom_crop[1]
             bottom = image.size[1]

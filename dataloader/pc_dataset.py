@@ -127,7 +127,7 @@ class SemanticKITTI(data.Dataset):
             image = Image.new('RGB', [2048, 1024])   # dummy_image
         proj_matrix = self.proj_matrix[int(self.im_idx[index][-22:-20])]
         logging.info(proj_matrix)
-        stop_here()
+        # stop_here()
 
         data_dict = {}
         data_dict['xyz'] = points
@@ -339,7 +339,7 @@ class Rellis3d(data.Dataset):
         logging.info(split)
         for i_folder in split:
             logging.info(str(i_folder).zfill(5))
-            self.im_idx += absoluteFilePaths('/'.join([data_path, str(i_folder).zfill(5), 'os1_cloud_node_kitti_bin']), num_vote)
+            self.im_idx += absoluteFilePaths('/'.join([data_path, str(i_folder).zfill(5), 'os1_cloud_node_kitti_bin']), num_vote)   # num_vote是什么
             calib_path = os.path.join(data_path, str(i_folder).zfill(5), "calib.txt")
             calib = self.read_calib(calib_path)
             proj_matrix = np.matmul(calib["P0"], calib["Tr"])
